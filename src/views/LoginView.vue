@@ -1,0 +1,512 @@
+<!-- Login.vue -->
+<template>
+  <div class="container">
+    <h1>Sign In</h1>
+    <div id="error-message" class="error" style="color: red; padding-bottom: 15px; text-align: center"></div>
+    <form class="login-form" id="login-form" @submit.prevent="login">
+      <input class="input-field" type="text" placeholder="Username" id="username" v-model="username" required
+        autocomplete="off" />
+      <span class="error username_err"></span>
+      <input class="input-field" type="password" placeholder="Password" id="password" v-model="password" required
+        autocomplete="off" />
+      <span class="error password_err"></span>
+      <button class="btn-submit" type="submit" name="submit" id="submit">
+        Sign In
+      </button>
+      <div id="spinner"></div>
+    </form>
+    <hr class="divider" />
+    <!-- <a href="#" class="forgot-password">Forgot Password?</a> -->
+  </div>
+</template>
+  
+<script>
+export default {
+  data() {
+    return {
+      baseUrl: this.baseApiUrl,
+      username: '',
+      password: '',
+      token: ''
+    };
+  },
+  methods: {
+    async login() {
+      const response = await fetch(this.baseUrl + '/api/auth/login', {
+        method: 'POST',
+        headers: { 'Content-type': 'application/json' },
+        body: JSON.stringify({
+          username: this.username,
+          password: this.password
+        })
+      });
+      const data = await response.json();
+      console.log(data.access_token);
+      this.token = data.access_token;
+      localStorage.setItem('edms_token', this.token);
+      this.$emit('login-success');
+    },
+  },
+};
+</script>
+  
+<style scoped>
+/* Add some styling if needed */
+.msb .navbar-nav li input[type="radio"]:checked+label {
+  background-color: #355B11 !important;
+  color: white !important;
+  border-radius: 5px;
+  padding: 10px;
+  box-sizing: border-box;
+  display: flex;
+  align-items: center;
+
+}
+
+.msb .navbar-nav li label {
+  text-decoration: none;
+  padding: 10px;
+  text-align: left;
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  position: relative;
+  cursor: pointer;
+  width: 130px;
+}
+
+.msb .navbar-nav li {
+  margin-left: 9px;
+}
+
+.msb .navbar-nav li input[type="radio"] {
+  display: none;
+}
+
+
+.msb .navbar-nav li label:hover {
+  background-color: #f0f0f0;
+  border-bottom: 3px solid #ffa600;
+}
+
+.msb .navbar-nav .fa {
+  margin-right: 9px;
+}
+
+.brand-name-wrapper {
+
+  position: relative;
+  left: 45px;
+  padding: 2px;
+}
+
+
+.brand-name-wrapper:hover {
+  border-bottom: 3px solid #ffa600;
+}
+
+body {
+  margin-top: 50px;
+  background-color: whitesmoke;
+  font-family: Arial, sans-serif;
+  font-size: 14px;
+  letter-spacing: 0.01em;
+  color: black;
+}
+
+.ic {
+  font-size: 16px;
+  margin-right: 5px;
+  font-weight: 300px;
+  display: inline-block;
+}
+
+.navbar-default {
+  margin-left: 1150px;
+  background: transparent !important;
+  border: none !important;
+
+}
+
+/*main side bar*/
+.msb {
+  width: 152px;
+  background-color: white;
+  position: fixed;
+  left: 0;
+  top: 0;
+  min-height: 100%;
+  overflow-y: auto;
+  white-space: nowrap;
+  overflow-wrap: break-word;
+  z-index: 1;
+  height: 100vh;
+  box-shadow: 5px 0 10px rgba(0, 0, 0, 0.2);
+
+}
+
+
+.nv {
+  li {
+    display: block;
+    position: relative;
+
+    &::before {
+      clear: both;
+      content: "";
+      display: table;
+    }
+
+  }
+
+}
+
+/*main content wrapper*/
+.mcw {
+  margin-left: 150px;
+  position: relative;
+  min-height: 50%;
+
+  /*content view*/
+  .cv {
+    margin-top: 6rem;
+    padding: 5px;
+    padding-right: 20px;
+    padding-left: 20px;
+  }
+}
+
+.createButton {
+  background: #355B11;
+  color: white;
+  border: none;
+  border-radius: 5px;
+  padding: 5px 12px;
+  font-weight: bold;
+  letter-spacing: 1px;
+  margin-bottom: 15px;
+}
+
+.pagination {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: 10px;
+  font-size: 15px;
+}
+
+
+.pagination a {
+  color: black;
+  padding: 8px 8px;
+  text-decoration: none;
+  transition: background-color .3s;
+  margin: 0 2px;
+}
+
+.pagination a.active {
+  background-color: #355B11;
+  color: white;
+}
+
+.pagination a:hover:not(.active) {
+  background-color: #ddd;
+}
+
+input {
+  outline: none;
+  transition: border-color ease-in-out .15s, box-shadow ease-in-out .15s;
+}
+
+.btn:hover {
+  background-color: rgb(230, 176, 30);
+}
+
+a:visited {
+  color: rgb(14 165 233);
+}
+
+body {
+  background-color: rgb(51 65 85);
+}
+
+.container {
+  background-color: #fff;
+  max-height: 100%;
+  max-width: 27rem;
+  padding: 0.85rem;
+  margin-right: auto;
+  margin-left: auto;
+  border-radius: 0.85rem;
+  margin-top: 37px;
+}
+
+.container h1 {
+  font-size: 30px;
+  text-align: center;
+  font-weight: bold;
+}
+
+.error-message {
+  color: red;
+  padding-bottom: 15px;
+  text-align: center;
+}
+
+.login-form {
+  display: flex;
+  flex-direction: column;
+  gap: 15px;
+}
+
+.input-field {
+  background: #fff;
+  color: #495057;
+  border: 1px solid #afb1b4 rgba(129, 125, 125, .2);
+  padding: 12px 18px;
+  font-weight: 600;
+  height: auto;
+  border-radius: 2rem;
+}
+
+.btn-submit {
+  border: none;
+  background-color: rgb(51 65 85);
+  color: white;
+  padding: 0.75rem;
+  border-radius: 2rem;
+  text-transform: uppercase;
+  cursor: pointer;
+  margin-top: 18px;
+}
+
+.divider {
+  margin-top: 1.5rem;
+  margin-bottom: 1.5rem;
+  border: 0.5px solid rgba(129, 125, 125, .2);
+}
+
+.forgot-password {
+  color: rgb(14 165 233);
+  margin-top: 5px;
+  align-items: center;
+  justify-content: center;
+  gap: 15px;
+  display: flex;
+  text-decoration: none;
+}
+
+/* Styling for the spinner */
+#spinner {
+  display: none;
+  border: 4px solid rgba(0, 0, 0, 0.1);
+  border-radius: 50%;
+  border-top: 4px solid #3498db;
+  width: 30px;
+  height: 30px;
+  animation: spin 1s linear infinite;
+  margin: 0 auto;
+  margin-top: 15px;
+}
+
+@keyframes spin {
+  0% {
+    transform: rotate(0deg);
+  }
+
+  100% {
+    transform: rotate(360deg);
+  }
+}
+
+.img-box {
+  width: 50px;
+  height: 50px;
+  border-radius: 50%;
+  overflow: hidden;
+  border: 3px solid white;
+  flex-shrink: 0;
+}
+
+.img-box img {
+  width: 100%;
+}
+
+
+.box:hover {
+  background-color: #355B11;
+}
+
+.data-info {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 10px;
+
+}
+
+.box {
+  background-color: rgb(42, 45, 48);
+  height: 150px;
+  flex-basis: 150px;
+  flex-grow: 1;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: space-around;
+  color: #f0f0f0;
+  cursor: pointer;
+}
+
+.box i {
+  font-size: 40px
+}
+
+.box .data {
+  text-align: center;
+}
+
+.box .data span {
+  font-size: 30px;
+}
+
+/* tree */
+.tree,
+.tree ul {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.tree ul {
+  margin-left: 1em;
+  position: relative;
+}
+
+.tree ul ul {
+  margin-left: .5em;
+}
+
+.tree ul:before {
+  content: "";
+  display: block;
+  width: 0;
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 0;
+  border-left: 1px solid #afb1b4;
+}
+
+.tree li {
+  margin: 0;
+  padding: 8px 1em;
+  line-height: 2em;
+  color: black;
+  position: relative;
+  cursor: pointer;
+}
+
+.tree ul li:before {
+  content: "";
+  display: block;
+  width: 10px;
+  height: 0;
+  border-top: 1px solid #afb1b4;
+  margin-top: -1px;
+  position: absolute;
+  top: 1em;
+  left: 0;
+}
+
+.tree ul li:last-child:before {
+  background: #fff;
+  height: auto;
+  top: 1em;
+  bottom: 0;
+}
+
+.indicator {
+  margin-right: 5px;
+}
+
+.tree li a,
+.tree li button {
+  text-decoration: none;
+  color: black;
+}
+
+
+
+.tree .btn {
+  text-decoration: none;
+  color: teal;
+  padding: 0;
+  margin: 0;
+  background: transparent;
+  border: none;
+  display: inline-block;
+}
+
+.tree .btn i {
+  margin-right: 5px;
+}
+
+/* CARD CSS */
+
+.custom-flex-container {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+}
+
+.custom-card {
+  width: calc(25% - 20px);
+  margin-bottom: 20px;
+  border: 1px solid #ccc;
+  border-radius: 5px;
+  padding: 10px;
+  box-shadow: 5px 5px 10px rgba(0, 0, 0, 0.2);
+  transition: box-shadow 0.3s, transform 0.3s;
+  /* Add transition for smoother effect */
+}
+
+.custom-card:hover {
+  transform: scale(1.05);
+}
+
+.custom-card-header {
+  background-color: #355b11;
+  color: whitesmoke;
+  padding: 5px 5px;
+  border-radius: 5px;
+  text-align: center;
+}
+
+.custom-card-body {
+  padding: 10px;
+}
+
+.custom-card-footer {
+  display: flex;
+  justify-content: space-between;
+  padding: 5px;
+}
+
+.custom-btn {
+  padding: 5px 20px;
+  cursor: pointer;
+  border: none;
+  border-radius: 3px;
+}
+
+.custom-btn-primary:hover {
+  background-color: #ffa600;
+}
+
+.custom-btn-danger:hover {
+  background-color: #dc3545;
+  color: whitesmoke;
+}
+</style>
+  
