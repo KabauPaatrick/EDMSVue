@@ -10,20 +10,21 @@
           <thead>
             <tr>
               <th>#</th>
-              <th>Cab Name</th>
-              <th>No of Folders</th>
-              <th>Owner</th>
-              <th>Date Created</th>
+              <th>Name</th>
+              <th>Type</th>
+              <th>Size (No of Docs)</th>
+              <th>Owner / Modified By</th>
+              <th>Date Created / Last Modified</th>
             </tr>
           </thead>
           <tbody>
-            <!-- Render the list of cabinets -->
-            <tr v-for="(cabinet, index) in cabinets" :key="index" @click="showFolders(cabinet.folders)">
+            <tr v-for="(item, index) in combinedData" :key="index">
               <td>{{ index + 1 }}</td>
-              <td>{{ cabinet.name }}</td>
-              <td>{{ cabinet.folders.length }}</td>
-              <td>{{ cabinet.owner }}</td>
-              <td>{{ cabinet.dateCreated }}</td>
+              <td>{{ item.name }}</td>
+              <td>{{ item.type }}</td>
+              <td>{{ item.type === 'Folder' ? item.total_documents : item.size + ' Mb' }}</td>
+              <td>{{ item.type === 'Folder' ? 'Supervisor' : 'User ' + (index + 1) }}</td>
+              <td>{{ item.type === 'Folder' ? '22nd November 2023' : item.lastModified + ' min ago' }}</td>
             </tr>
           </tbody>
         </table>

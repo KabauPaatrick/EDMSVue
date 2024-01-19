@@ -79,6 +79,22 @@ export default {
                 case 1:
                     this.$router.push('/repository');
                     break;
+                case 2:
+                    this.$router.push('/');
+                    break;
+                case 3:
+                    this.$router.push('/');
+                    break;
+
+                case 4:
+                    this.$router.push('/');
+                    break;
+                case 5:
+                    this.$router.push('/');
+                    break;
+                case 6:
+                    this.$router.push('/documentviewer');
+                    break;
                 // Add cases for other tabs
                 default:
                     break;

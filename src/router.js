@@ -19,6 +19,12 @@ const routes = [
     name: 'Repository',
     component: () => import('./views/RepositoryView.vue'),
   },
+  {
+    path: '/documentviewer',
+    name: 'DocumentViewer',
+    component: () => import('./components/DocumentViewer.vue'),
+  }
+  
 ];
 
 const router = createRouter({

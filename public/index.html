@@ -10,7 +10,49 @@
   <link href="https://fonts.googleapis.com/icon?family=Material+Icons+Outlined" rel="stylesheet">
   <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/css/bootstrap.min.css"
     integrity="sha384-ggOyR0iXCbMQv3Xipma34MD+dH/1fQ784/j6cY/iJTQUOhcWr7x9JvoRxT2MZw1T" crossorigin="anonymous">
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.4.120/pdf.min.js"></script>
+  <script>
+    var pdfjsLib = window['pdfjs-dist/build/pdf'];
+    pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.4.120/pdf.worker.min.js';
+  </script>
+  <style>
+    .pdfjs-toolbar,
+    .pdfjs-toolbar i {
+      font-size: 14px;
+    }
 
+    .pdfjs-toolbar span {
+      margin-right: 0.5em;
+      margin-left: 0.5em;
+      width: 4em !important;
+      font-size: 12px;
+    }
+
+    .pdfjs-toolbar .btn-sm {
+      padding: 0.12rem 0.25rem;
+    }
+
+    .pdfjs-toolbar {
+      width: 100%;
+      height: auto;
+      background: #ddd;
+      z-index: 100;
+    }
+
+    .sidebar {
+      background-color: #f8f9fa;
+      padding: 20px;
+    }
+
+    .btn-icon {
+      display: block;
+      width: 100%;
+      margin-bottom: 5px;
+    }
+  </style>
+<!-- 
+  <script src="dist/js/pdfjs-viewer.js"></script>
+  <link rel="stylesheet" href="dist/css/pdfjs-viewer.css"> -->
 
   <script src="https://code.jquery.com/jquery-3.6.4.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
@@ -28,9 +70,6 @@
     <div id="app" class="x y ba ml30">
 
     </div>
-
-    <!-- <div class="sidebar-right sidebar-mini layout-navbar-fixed layout-fixed text-sm sidebar-light-indigo elevation-4"
-      id="sidebarRight">  -->
   </div>
   <!-- built files will be auto injected -->
 </body>
