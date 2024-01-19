@@ -17,20 +17,20 @@
             <div style="font-weight:bolder">
                 <div class="y">
                     <div class="c">
-                        <input class="g" name="dashboard_properties_tab" value="0" type="radio" checked="1" />
-                        <li class="x y rsbtab" @click="_tab(this)">Meta Data</li>
+                        <input class="g" name="dashboard_properties_tab" value="0" type="radio" v-model="activeTab"/>
+                        <li class="x y rsbtab" @click="_tab(0)">Meta Data</li>
                     </div>
                     <div class="c">
-                        <input class="g" name="dashboard_properties_tab" value="1" type="radio" />
-                        <li class="x y rsbtab" @click="_tab(this)">Index Fields</li>
+                        <input class="g" name="dashboard_properties_tab" value="1" type="radio" v-model="activeTab" />
+                        <li class="x y rsbtab" @click="_tab(1)">Index Fields</li>
                     </div>
                     <div class="c">
-                        <input class="g" name="dashboard_properties_tab" value="2" type="radio" />
-                        <li class="x y rsbtab" @click="_tab(this)">Permissions</li>
+                        <input class="g" name="dashboard_properties_tab" value="2" type="radio" v-model="activeTab" />
+                        <li class="x y rsbtab" @click="_tab(2)">Permissions</li>
                     </div>
                     <div class="c">
-                        <input class="g" name="dashboard_properties_tab" value="3" type="radio" />
-                        <li class="x y rsbtab" @click="_tab(this)">Automations</li>
+                        <input class="g" name="dashboard_properties_tab" value="3" type="radio" v-model="activeTab" />
+                        <li class="x y rsbtab" @click="_tab(3)">Automations</li>
                     </div>
                     <div class="e"></div>
                 </div>
@@ -66,7 +66,7 @@
 export default {
     data() {
         return {
-            //   sidebarWidth: 0, // Initial width of the sidebar
+            activeTab: 0,
         }
     },
     components: {
@@ -78,17 +78,20 @@ export default {
     methods: {
         hideRightSidebar() {
             this.$emit('hide-sidebar');
-            // Implement the logic for hiding the right sidebar
         },
         updateChartSizes() {
             console.log('updateChartSizes');
-            // Implement the logic for updating chart sizes
-            // var charts = [barChart, lineChart, pieChart, doughnutChart];
-            // charts.forEach(function (chart) {
-            //     if (chart) {
-            //         chart.resize();
-            //     }
-            // });
+        },
+        _tab(index) {
+            this.activeTab = index;
+            // switch (index) {
+            //     case 1:
+            //         this.openSearch = true;
+            //         break;
+            //     // Add cases for other tabs
+            //     default:
+            //         break;
+            // }
         },
     },
 
