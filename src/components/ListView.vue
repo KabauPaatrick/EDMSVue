@@ -42,7 +42,13 @@
 </template>
   
 <script>
+// import { inject } from 'vue'
 export default {
+  data() {
+    return {
+      baseUrl: this.baseApiUrl
+    }
+  },
   methods: {
     showFolders(folders) {
       // Emit an event to the parent component (RepositoryView) to show folders
