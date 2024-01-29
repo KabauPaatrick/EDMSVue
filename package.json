@@ -8,16 +8,30 @@
     "lint": "vue-cli-service lint"
   },
   "dependencies": {
+    "@babel/preset-env": "^7.23.8",
+    "axios": "^1.6.5",
     "bootstrap": "^4.6.2",
     "chart.js": "^3.9.1",
     "core-js": "^3.8.3",
-    "pdfjs-dist": "^4.0.379",
+    "pdfjs-dist": "^2.4.456",
+    "vform": "^2.1.2",
     "vue": "^3.2.13",
-    "vue-router": "^4.2.5"
+    "vue-pdf": "^4.3.0",
+    "vue-router": "^4.2.5",
+    "vue-sweetalert2": "^5.0.5",
+    "vue-toastification": "^2.0.0-rc.5",
+    "vue-toastr": "^3.0.5",
+    "vue3-pdf-app": "^1.0.3",
+    "vue3-progress": "^0.0.1-beta4",
+    "vue3-treeselect": "^0.1.10",
+    "vuex": "^4.1.0",
+    "worker-loader": "^3.0.8"
   },
   "devDependencies": {
-    "@babel/core": "^7.12.16",
+    "@babel/core": "^7.23.7",
     "@babel/eslint-parser": "^7.12.16",
+    "@babel/plugin-transform-class-properties": "^7.23.3",
+    "@babel/plugin-transform-private-methods": "^7.23.3",
     "@vue/cli": "^5.0.8",
     "@vue/cli-plugin-babel": "~5.0.0",
     "@vue/cli-plugin-eslint": "~5.0.0",

@@ -3,7 +3,7 @@
 		<!-- Content of Registered Cabinets -->
 		<div class="card elevation-3">
 			<div class="card-header">
-				<h3 class="card-title"><b>{{ folder ? folder.name : "" }}</b></h3>
+				<h3 class="card-title"><b>Recently Viewed Folders and Documents</b></h3>
 			</div>
 			<div class="card-body table-responsive">
 				<div class="row">
@@ -19,11 +19,11 @@
 					<thead class="thead-light">
 						<tr>
 							<th>#</th>
-							<th @click="sortBy('document_name')">
-								<i v-if="sortedColumn == 'document_name' && sortOrder == 'asc'">
+							<th @click="sortBy('name')">
+								<i v-if="sortedColumn == 'name' && sortOrder == 'asc'">
 									<span class="material-symbols-outlined col-md-2 mr-1 pr-0"
 										style="border:none;">arrow_drop_up</span></i>
-								<i v-else-if="sortedColumn == 'document_name' && sortOrder == 'desc'"><span
+								<i v-else-if="sortedColumn == 'name' && sortOrder == 'desc'"><span
 										class="material-symbols-outlined col-md-2 mr-1 pr-0"
 										style="border:none;">arrow_drop_down</span></i>
 								<i v-else><span class="material-symbols-outlined col-md-2 mr-1 pr-0 comparision_icon"
@@ -41,47 +41,52 @@
 										style="border:none;">compare_arrows</span></i>
 								Date Modified
 							</th>
-							<th @click="sortBy('doc_version_name')">
-								<i v-if="sortedColumn == 'doc_version_name' && sortOrder == 'asc'">
+							<th @click="sortBy('path')">
+								<i v-if="sortedColumn == 'path' && sortOrder == 'asc'">
 									<span class="material-symbols-outlined col-md-2 mr-1 pr-0"
 										style="border:none;">arrow_drop_up</span></i>
-								<i v-else-if="sortedColumn == 'doc_version_name' && sortOrder == 'desc'"><span
+								<i v-else-if="sortedColumn == 'path' && sortOrder == 'desc'"><span
 										class="material-symbols-outlined col-md-2 mr-1 pr-0"
 										style="border:none;">arrow_drop_down</span></i>
 								<i v-else><span class="material-symbols-outlined col-md-2 mr-1 pr-0 comparision_icon"
 										style="border:none;">compare_arrows</span></i>
-								Version
+								path
 							</th>
-							<th @click="sortBy('doc_file_size')">
-								<i v-if="sortedColumn == 'doc_file_size' && sortOrder == 'asc'">
+							<th @click="sortBy('size')">
+								<i v-if="sortedColumn == 'size' && sortOrder == 'asc'">
 									<span class="material-symbols-outlined col-md-2 mr-1 pr-0"
 										style="border:none;">arrow_drop_up</span></i>
-								<i v-else-if="sortedColumn == 'doc_file_size' && sortOrder == 'desc'"><span
+								<i v-else-if="sortedColumn == 'size' && sortOrder == 'desc'"><span
 										class="material-symbols-outlined col-md-2 mr-1 pr-0"
 										style="border:none;">arrow_drop_down</span></i>
 								<i v-else><span class="material-symbols-outlined col-md-2 mr-1 pr-0 comparision_icon"
 										style="border:none;">compare_arrows</span></i>
-								Size (mbs)
+								Size
 							</th>
 							<!-- <th>Supervisor / Modified By</th> -->
 						</tr>
 					</thead>
 					<tbody>
-						<tr v-for="(document, id) in filteredRows" :key="id"
-							:class="{ 'table-active': isActive == document.id }"
-							@contextmenu.prevent="showContextMenu($event, document)">
-							<td>
-								<span v-if="bookmark_documents.includes(document.id)" class="material-symbols-outlined"
-									style="font-size:30px;">book</span>
-								<span class="material-symbols-outlined" v-else
-									style="font-size:30px">insert_drive_file</span>
+						<tr v-for="(item, id) in filteredRows" :key="id" :class="{ 'table-active': isActive == id }"
+							@contextmenu.prevent="showContextMenu($event, item)">
+							<td @click="openItem(item)">
+								<span v-if="item.type == 'document'">
+									<span v-if="bookmark_documents.includes(item.id)" class="material-symbols-outlined"
+										style="font-size:30px;">book</span>
+									<span class="material-symbols-outlined" v-else
+										style="font-size:30px">insert_drive_file</span>
+								</span>
+								<span v-else>
+									<span v-if="bookmark_folders.includes(item.id)" class="material-symbols-outlined"
+										style="font-size:30px;">folder_special</span>
+									<span class="material-symbols-outlined" v-else style="font-size:30px">folder</span>
+								</span>
 							</td>
-							<td @click="highlistItem(document, id)">{{ document.document_name }}</td>
-							<td @click="highlistItem(document, id)">{{ new Date(document.updated_at).toLocaleString() }}
-							</td>
-							<td @click="highlistItem(document, id)">{{ document.doc_version_name }}</td>
-							<td @click="highlistItem(document, id)">{{ document.doc_file_size }} MB</td>
-							<!-- <td>{{ document.created_at }}</td> -->
+							<td @click="highlistItem(item, id)">{{ item.name }}</td>
+							<td @click="highlistItem(item, id)">{{ new Date(item.updated_at).toLocaleString() }}</td>
+							<td @click="highlistItem(item, id)">{{ item.path }}</td>
+							<td @click="highlistItem(item, id)">{{ item.size }} MB</td>
+							<!-- <td>{{ item.created_at }}</td> -->
 						</tr>
 						<!-- Overlay to close the menu -->
 						<div class="context_overlay" @click="closeContextMenu" v-if="showMenu" />
@@ -108,7 +113,6 @@
 		</div>
 	</div>
 </template>
-  
 <script>
 // import { inject } from 'vue'
 import { ref } from 'vue';
@@ -117,15 +121,16 @@ import _ from 'lodash';
 
 export default {
 	components: {
-		ContextMenu,
+		ContextMenu
 	},
 	props: {
 		documents: Array,
-		folder: {},// Define the prop type
+		folders: Array,// Define the prop type
 		pagination: Object,
 	},
 	data() {
 		return {
+			baseUrl: this.baseApiUrl,
 			showMenu: ref(false),
 			menuX: ref(0),
 			menuY: ref(0),
@@ -140,52 +145,63 @@ export default {
 			sortedColumn: 'updated_at',
 			sortOrder: 'asc',
 			bookmark_documents: JSON.parse(localStorage.getItem("bookmark_documents")) || [],
+			bookmark_folders: JSON.parse(localStorage.getItem("bookmark_folders")) || [],
 		}
 	},
 	computed: {
 		filteredRows() {
-			let filteredRows = this.$props.documents;
-			filteredRows.forEach(row => {
-				row['updated_at'] = row.document_versions.find(version => version.main_file == true) ?
-					row.document_versions.find((version) => version.main_file == true).updated_at : row.updated_at;
-				row['doc_version_name'] = row.document_versions.find(version => version.main_file == true) ?
-					row.document_versions.find(version => version.main_file == true).version_name : '';
-				row['doc_file_size'] = row.document_versions.find(version => version.main_file == true) ?
-					parseInt(row.document_versions.find(version => version.main_file == true).file_size).toFixed(4) :
-					''
-			});
-			if (this.searchTerm) {
-				const searchTermLowerCase = this.searchTerm.toLowerCase();
-				filteredRows = filteredRows.filter(row =>
-					Object.values(row).some(value => value.toString().toLowerCase().includes(searchTermLowerCase))
-				);
-			}
+			let filteredRows = [];
+			let documents = this.$props.documents;
+			let folders = this.$props.folders;
+			if (this.bookmark_folders.length || this.bookmark_documents.length) {
+				documents.forEach(row => {
+					row['name'] = row.document_name ? row.document_name : '';
+					row['updated_at'] = row.document_versions.find(version => version.main_file == true) ?
+						row.document_versions.find((version) => version.main_file == true).updated_at : row.updated_at;
+					row['path'] = row.folder ? row.folder.path + '/' + row['name'] : '';
+					row['size'] = row.document_versions.find(version => version.main_file == true) ?
+						parseInt(row.document_versions.find(version => version.main_file == true).file_size).toFixed(4) :
+						'';
+					row['type'] = "document";
+				});
+				folders.forEach(row => {
+					row['name'] = row.name ? row.name : '';
+					row['updated_at'] = row.updated_at ? row.updated_at : '';
+					row['path'] = row.path ? row.path : '';
+					row['size'] = row.documents ? row.documents.length : '';
+					row['type'] = "folder";
+				});
+				filteredRows = folders.concat(documents);
+				if (this.searchTerm) {
+					const searchTermLowerCase = this.searchTerm.toLowerCase();
+					filteredRows = filteredRows.filter(row =>
+						Object.values(row).some(value => value.toString().toLowerCase().includes(searchTermLowerCase))
+					);
+				}
 
-			if (this.sortedColumn) {
-				// const orderMultiplier = this.sortOrder === 'asc' ? 1 : -1;
-				filteredRows = _.orderBy(filteredRows, [this.sortedColumn], [this.sortOrder]);
+				if (this.sortedColumn) {
+					// const orderMultiplier = this.sortOrder === 'asc' ? 1 : -1;
+					filteredRows = _.orderBy(filteredRows, [this.sortedColumn], [this.sortOrder]);
+				}
 			}
-
 			return filteredRows;
 		},
 	},
 	methods: {
-		openItem(item) {
-			let path = this.baseUrl + '/api/showPdf/' + item.path.split('/')[2];
-			let showViewer = true;
-			this.$emit('show-viewer', path, showViewer);
+		highlistItem(item, id) {
+			this.isActive = id;
+			if (item.type == 'document') {
+				this.$emit('update-select-document', item);
+			} else {
+				this.$emit('update-current_folder', item);
+			}
 		},
-		highlistItem(document) {
-			// console.log(document);
-			this.isActive = document.id;
-			this.$emit('update-select-document', document);
-		},
-		showContextMenu(event, document) {
+		showContextMenu(event, item) {
 			event.preventDefault();
 			this.showMenu = true;
-			this.targetRow = document;
-			this.menuX = event.clientX - 430;
-			this.menuY = event.clientY - 180;
+			this.targetRow = item;
+			this.menuX = event.clientX - 130;
+			this.menuY = event.clientY - 170;
 		},
 		closeContextMenu() {
 			this.showMenu = false;
@@ -194,21 +210,31 @@ export default {
 			this.closeContextMenu();
 			switch (action) {
 				case "bookmark":
-					// bookmarkly viewed folders
-					if (this.bookmark_documents.includes(parseInt(this.targetRow.id))) {
-						this.bookmark_documents = this.bookmark_documents.filter(item => item !== this.targetRow.id);   // Remove the ducment
-					} else {
-						this.bookmark_documents.push(this.targetRow.id);
+					if (this.targetRow.type == "document") {
+						if (this.bookmark_documents.includes(parseInt(this.targetRow.id))) {
+							this.bookmark_documents = this.bookmark_documents.filter(item => item != this.targetRow.id);   // Remove the document
+							let target_doc = this.$props.documents.find(item => item.id == this.targetRow.id);
+							this.$props.documents.splice(target_doc, 1);
+						} else {
+							this.bookmark_documents.push(this.targetRow.id);
+						}
+						localStorage.setItem("bookmark_documents", JSON.stringify(this.bookmark_documents));
 					}
-					localStorage.setItem("bookmark_documents", JSON.stringify(this.bookmark_documents));
+					else {
+						if (this.bookmark_folders.includes(parseInt(this.targetRow.id))) {
+							this.bookmark_folders = this.bookmark_folders.filter(item => item != this.targetRow.id);   // Remove the folder
+							let target_folder = this.$props.folders.find(item => item.id == this.targetRow.id);
+							this.$props.folders.splice(target_folder, 1);
+						} else {
+							this.bookmark_folders.push(this.targetRow.id);
+						}
+						localStorage.setItem("bookmark_folders", JSON.stringify(this.bookmark_folders));
+					}
 					break;
 				// Add cases for other tabs
 				default:
 					break;
-				// console.log(action);
-				// console.log(this.targetRow);
 			}
-
 		},
 		sortBy(columnKey) {
 			if (this.sortedColumn == columnKey) {
@@ -218,6 +244,22 @@ export default {
 				this.sortOrder = 'asc';
 			}
 		},
+		openItem(item) {
+			// console.log(item);
+			if (item.type == 'folder') {
+				this.$router.push({
+					name: 'Repository',
+					// params: { folder: item.id },
+					query: { folder: item.id }
+				});
+			} else {
+				let file_name = item.document_versions.find((version) => version.main_file == true).physical_path;
+				let path = this.baseUrl + '/api/showPdf/' + file_name.split('/')[2];
+				let showViewer = true;
+				this.$emit('show-viewer', path, showViewer);
+			}
+			// this.$emit('open-folder', this.targetRow);
+		}
 	},
 };
 </script>
@@ -249,5 +291,6 @@ export default {
 	-o-transform: rotate(90deg);
 	-ms-transform: rotate(90deg);
 	transform: rotate(90deg);
-}</style>
+}
+</style>
   

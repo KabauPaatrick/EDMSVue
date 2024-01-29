@@ -41,7 +41,7 @@ export default {
         })
       });
       const data = await response.json();
-      console.log(data.access_token);
+      // console.log(data.access_token);
       this.token = data.access_token;
       localStorage.setItem('edms_token', this.token);
       this.$emit('login-success');

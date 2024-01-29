@@ -1,78 +1,152 @@
+// DocumentViewer.vue
 <template>
-  <div class="document-viewer sidebar-mini layout-navbar-fixed layout-fixed text-sm sidebar-light-indigo elevation-4" id="documentViewer" style="overflow: hidden">
-    <!-- Add content for right sidebar here -->
-    <div class="content y" style="padding-left: 20px; padding-right: 20px; overflow: hidden">
-      <div class="row">
-        <div class="col-6">
-          <div><b style="font-size: 15px"><u><label id="documentTitle"></label></u></b></div>
-        </div>
-        <div class="col-6">
-          <div class="close" @click="hideDocumentViewer">&times;</div>
-        </div>
-      </div>
-    </div>
-    <!--------------------------------------------------------------------DASHBOARD PROPERTIES CONTENT-------------------------------------------------------------------->
-    <div class="content y" style="padding-left: 30px; padding-right: 20px; height: inherit; overflow: hidden">
-      <input type="hidden" value="sampleDesc/Document 0.pdf" id="setSelectedDocument">
-
-      <div class="row h-100">
-        <!-- Left Sidebar -->
-        <div class="col-1 sidebar" style="float: left">
-          <button class="btn btn-secondary btn-sm btn-icon" @click="pdfViewerFirst" title="Select"><span class="material-symbols-outlined">arrow_selector_tool</span></button>
-          <!-- Add other buttons here with @click handlers -->
-        </div>
-
-        <div class="row col-11 offset-md-0 pdfviewer p-0 row h-100">
-          <div class="pdfjs-toolbar text-center row m-0 p-0">
-            <div class="col-12 col-lg-6 my-1">
-              <!-- Add buttons with @click handlers -->
-            </div>
-            <div class="col-12 col-lg-6 my-1">
-              <!-- Add buttons with @click handlers -->
-            </div>
-          </div>
-
-          <div id="docViewer" class="pdfjs-viewer" style="height: inherit; width: 100%;" @document-ready="onDocumentReady"></div>
-          <button id="loadPdfButton" @click="loadPdf">Load PDF</button>
-        </div>
-      </div>
-    </div>
-    <!--------------------------------------------------------------------WORKFLOWS PROPERTIES CONTENT-------------------------------------------------------------------->
-  </div>
+	<div>
+		<vue-pdf-app style="height: 100vh;" :pdf="actual_file" theme="light" :config="config"></vue-pdf-app>
+		<ThumbnailsViewer :thumbnails="thumbnails" />
+		<!-- <img :src="thumbnail" alt="Thumbnail" style="max-width: 100px; max-height: 200px; margin: 10px;" /> -->
+	</div>
 </template>
 
 <script>
+import VuePdfApp from 'vue3-pdf-app';
+// import ThumbnailsViewer from '@/components/ThumbnailsViewer';
+import * as pdfjsLib from 'pdfjs-dist/build/pdf';
+// import "vue3-pdf-app/dist/icons/main.css";
+
 export default {
-  data() {
-    // ... your existing data
-  },
-  methods: {
-    // ... your existing methods
-    // If you've already included PDF.js and its worker in your main HTML file, you may not need these methods
-    loadPdfJs() {
-      const script = document.createElement('script');
-      script.src = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.4.120/pdf.min.js';
-      script.onload = this.loadPdfJsWorker;
-      document.head.appendChild(script);
-    },
-    loadPdfJsWorker() {
-      const script = document.createElement('script');
-      script.src = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.4.120/pdf.worker.min.js';
-      script.onload = this.loadPdfViewer;
-      document.head.appendChild(script);
-    },
-    loadPdfViewer() {
-      // Now, you can initialize your PDF viewer, e.g., call displaySelectedPdf() here
-    },
-    
-  },
-  // mounted() {
-  //   this.loadPdfJs(); // Call this method to start loading PDF.js and dependencies
-  // },
-};
+	props: {
+		actual_file: String,
+	},
+	components: {
+		VuePdfApp,
+		// ThumbnailsViewer,
+	},
+
+	computed: {
+		// thumbnails() {
+		// 	return this.$store.state.thumbnails;
+		// },
+	},
+	data() {
+		return {
+			baseUrl: this.baseApiUrl,
+			token: localStorage.getItem("edms_token"),
+			config: {
+				toolbar: {
+					toolbarViewerLeft: {
+						previous: true
+					}
+				},
+				title: "true"
+			},
+			thumbnails: [],
+		}
+	},
+	mounted() {
+		this.parseFile();
+		// this.generateThumbnails();
+	},
+	methods: {
+		// async loadPDF(event) {
+		// 	try {
+		// 		const file = event.target.files[0];
+		// 		if (!file) throw new Error('No file selected');
+
+		// 		const arrayBuffer = await this.readFileAsync(file);
+		// 		this.parliament = arrayBuffer;
+
+		// 		this.generateThumbnails(arrayBuffer);
+		// 	} catch (error) {
+		// 		console.error('Error loading PDF:', error);
+		// 	}
+		// },
+
+		// async generateThumbnails(pdfArrayBuffer) {
+		// 	try {
+		// 		const pdfDoc = await pdfjsLib
+		// 			.getDocument({ data: new Uint8Array(pdfArrayBuffer) })
+		// 			.promise;
+		// 		const numPages = pdfDoc.numPages;
+		// 		const thumbnails = [];
+
+		// 		for (let i = 1; i <= numPages; i++) {
+		// 			const page = await pdfDoc.getPage(i);
+		// 			const viewport = page.getViewport({ scale: 0.1 });
+		// 			const canvas = document.createElement('canvas');
+		// 			const context = canvas.getContext('2d');
+
+		// 			canvas.width = viewport.width;
+		// 			canvas.height = viewport.height;
+
+		// 			const renderContext = { canvasContext: context, viewport: viewport };
+		// 			await page.render(renderContext).promise;
+
+		// 			const dataUrl = canvas.toDataURL('image/png');
+		// 			thumbnails.push(dataUrl);
+		// 			this.thumbnail = dataUrl;
+		// 		}
+
+		// 		this.$store.commit('setThumbnails', thumbnails);
+		// 	} catch (error) {
+		// 		console.error('Error generating thumbnails:', error);
+		// 	}
+		// },
+
+		// async readFileAsync(file) {
+		// 	return new Promise((resolve, reject) => {
+		// 		const reader = new FileReader();
+
+		// 		reader.onload = () => resolve(reader.result);
+		// 		reader.onerror = (error) => reject(error);
+
+		// 		reader.readAsArrayBuffer(file);
+		// 	});
+		// },
+		async parseFile(document) {
+			try {
+				const fetchResponse = await fetch(
+					"http://127.0.0.1:8000/api/showPdf/1706242914_2.1.pdf", {
+					// this.baseUrl +"/"+ this.$props.actual_file, {
+					method: 'GET',
+					headers: {
+						'Authorization': `Bearer ${this.token}`,
+						'Content-Type': 'application/json',
+						'Access-Control-Allow-Origin': '*',
+						'Access-Control-Allow-Methods': 'GET,POST,PATCH,OPTIONS'
+					}
+				}
+				);
+				// Get the PDF file as an ArrayBuffer
+				const pdfArrayBuffer = await fetchResponse.arrayBuffer();
+				const pdfDoc = await pdfjsLib
+					.getDocument({ data: new Uint8Array(pdfArrayBuffer) })
+					.promise;
+				const numPages = pdfDoc.numPages;
+				this.thumbnails = [];
+
+				for (let i = 1; i <= numPages; i++) {
+					const page = await pdfDoc.getPage(i);
+					const viewport = page.getViewport({ scale: 0.1 });
+					const canvas = document.createElement('canvas');
+					const context = canvas.getContext('2d');
+
+					canvas.width = viewport.width;
+					canvas.height = viewport.height;
+
+					const renderContext = { canvasContext: context, viewport: viewport };
+					await page.render(renderContext).promise;
+
+					const dataUrl = canvas.toDataURL('image/png');
+					this.thumbnails.push(dataUrl);
+					// this.thumbnail = dataUrl;
+				}
+				} catch (ex) {
+					console.log("Error in fetch");
+					console.log(ex);
+				}
+			}
+	},
+	};
 </script>
 
-<style scoped>
-/* Add your scoped styles here */
-</style>
-
+<style scoped></style>

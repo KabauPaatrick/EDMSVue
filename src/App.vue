@@ -1,4 +1,5 @@
 <template>
+  <vue3-progress />
   <Login v-if="!token" @login-success="handleLoginSuccess" />
   <PageLayout v-if="token" />
 </template>
@@ -19,8 +20,23 @@ export default {
   },
   mounted() {
     if (this.token) {
-      this.$router.push({ path: "/dashboard" })
+      this.$router.push({ path: "/dashboard" });
+      this.$progress.finish();
     }
+  },
+  created() {
+    this.$progress.start();
+
+    this.$router.beforeEach((to, from, next) => {
+      this.$progress.start();
+      next();
+    });
+
+    this.$router.afterEach(() => {
+      
+      this.$progress.finish();
+
+    });
   },
   methods: {
     handleLoginSuccess() {

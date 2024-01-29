@@ -11,14 +11,14 @@
         </center>
         <hr>
         <div class="" style="padding-bottom:2px;">
-            <input class="g" name="sidebar_tab1" value="0" type="radio" v-model="activeTab" />
+            <input class="g" name="sidebar_tab1" value="0" type="radio" v-model="activeTab"/>
             <li class="x y tab" @click="_tab(0)">
                 <center><span class="material-symbols-outlined" style="font-size:30px">space_dashboard</span><br>Dashboard
                 </center>
             </li>
         </div>
         <div class="" style="padding-bottom:2px">
-            <input class="g" name="sidebar_tab1" value="1" type="radio" v-model="activeTab" />
+            <input class="g" name="sidebar_tab1" value="1" type="radio" v-model="activeTab"/>
             <li class="x y tab" @click="_tab(1)">
                 <center><span class="material-symbols-outlined" style="font-size:30px">database</span><br>Repository
                 </center>
@@ -62,16 +62,35 @@
 </template>
   
 <script>
+// import { ref } from 'vue';
+
 export default {
     data() {
         return {
-            activeTab: 0,
+            // activeTab: ref(this.$route.name == 'Repository' ? 0 : 0),
         };
+    },
+    computed: {
+        activeTab(){
+        switch (this.$route.name) {
+            case "Dashboard":
+                return 0;
+            case "Repository":
+                return 1;
+            case "Recently Viewed":
+                return 2;
+            case "Bookmarks":
+                return 3;
+            // Add cases for other tabs
+            default:
+                return 0;
+                // break;
+        }
+        }
     },
     methods: {
         _tab(index) {
-            this.activeTab = index;
-            console.log(`Navigating to tab ${index}`);
+            // this.activeTab = index;
             switch (index) {
                 case 0:
                     this.$router.push('/dashboard');
@@ -80,14 +99,13 @@ export default {
                     this.$router.push('/repository');
                     break;
                 case 2:
-                    this.$router.push('/');
+                    this.$router.push('/recently_viewed');
                     break;
                 case 3:
-                    this.$router.push('/');
+                    this.$router.push('/bookmarks');
                     break;
-
                 case 4:
-                    this.$router.push('/');
+                    this.$router.push('/saved_search');
                     break;
                 case 5:
                     this.$router.push('/');
@@ -100,7 +118,6 @@ export default {
                     break;
             }
         },
-
     },
 };
 </script>
@@ -116,4 +133,5 @@ export default {
     color: white;
 }
 
-/* Add styles for other tab content as needed */</style>
+/* Add styles for other tab content as needed */
+</style>

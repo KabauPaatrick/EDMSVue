@@ -1,73 +1,71 @@
 <template>
 	<div class="x y">
-		<!-- Content of Registered Cabinets -->
+		<!-- Content of Folders -->
 		<div class="card elevation-3">
 			<div class="card-header">
-				<h3 class="card-title"><b>{{ folder ? folder.name : "" }}</b></h3>
+				<h3 class="card-title"><b>Recently Viewed Folders and Documents</b></h3>
 			</div>
-			<div class="card-body table-responsive">
-				<div class="row">
-					<div class="col-md-9">
-					</div>
-					<div class="col-md-2 ml-3">
-						<form class="form-group">
-							<input v-model="searchTerm" placeholder="Search..." class="form-group rounded" />
-						</form>
-					</div>
-				</div>
+			<div class="card-body">
 				<div v-if="filteredRows && filteredRows.length" class="row">
 					<div v-for="(thumbnail, index) in filteredRows" :key="index" class="column-md-3 thumbnail-container"
-						@click="highlistItem(thumbnail, index)">
-						<img :src="thumbnail.dataUrl" alt="Thumbnail" style="width: 150px; height: 200px; margin: 2px;"
-							:class="{ 'thumbnail-active': isActive == index }"
-							@contextmenu.prevent="showContextMenu($event, thumbnail)" />
-						<span v-if="bookmark_documents.includes(thumbnail.id)" class="material-symbols-outlined corner-icon"
-							style="font-size:20px;">stars</span>
+						@click="openItem(thumbnail, index)">
+						<div v-if="thumbnail.type == 'document'">
+							<img :src="thumbnail.dataUrl" alt="Thumbnail" style="width: 150px; height: 200px; margin: 2px;"
+								:class="{ 'thumbnail-active': isActive == index }"
+								@contextmenu.prevent="showContextMenu($event, thumbnail)" />
+							<span v-if="bookmark_documents.includes(thumbnail.id)"
+								class="material-symbols-outlined corner-icon" style="font-size:20px;">stars</span>
+						</div>
+						<div v-else>
+								<span v-if="bookmark_folders.includes(thumbnail.id)" class="material-symbols-outlined"
+									style="font-size:200px;">folder_special</span>
+							<span class="material-symbols-outlined" v-else style="font-size:200px">folder</span>
+						</div>
 						<center>
 							<span>{{ thumbnail.name }}</span>
 						</center>
 					</div>
 				</div>
-				<!-- Overlay to close the menu -->
-				<div class="context_overlay" @click="closeContextMenu" v-if="showMenu" />
-
-				<!-- Custom Context Menu -->
-				<ContextMenu v-if="showMenu" :actions="contextMenuActions" @action-clicked="handleActionClick" :x="menuX"
-					:y="menuY" />
+				<div v-else>
+					<p>No thumbnails available.</p>
+				</div>
 			</div>
 			<!-- <div class="card-footer clearfix">
-        <ul class="pagination pagination-sm m-0 float-right">
-          <li class="page-item"><a class="page-link" href="#" @click="fetchData(pagination.meta.current_page - 1)"
-              :disabled="pagination.meta.current_page === 1">&laquo;</a></li>
-          <li class="page-item"><a class="page-link" href="#" @click="fetchData(pagination.meta.current_page - 1)"
-              :disabled="pagination.meta.current_page === 1">First</a></li>
-          <span class="page-item page-link">Page {{ pagination.meta.current_page }} of {{ pagination.meta.total }}</span>
-          <li class="page-item"><a class="page-link" href="#" @click="fetchData(pagination.meta.current_page - 1)"
-              :disabled="pagination.meta.current_page === 1">Last</a></li>
-          <li class="page-item"><a class="page-link" href="#" @click="fetchData(pagination.meta.current_page + 1)"
-              :disabled="pagination.meta.current_page === pagination.meta.total">&raquo;</a></li>
-        </ul>
-      </div> -->
+				<ul class="pagination pagination-sm m-0 float-right">
+					<li class="page-item"><a class="page-link" href="#" @click="fetchData(currentPage - 1)"
+							:disabled="currentPage === 1">&laquo;</a></li>
+					<li class="page-item"><a class="page-link" href="#" @click="fetchData(currentPage - 1)"
+							:disabled="currentPage === 1">First</a></li>
+					<span class="page-item page-link">Page {{ pagination.meta.current_page }} of {{ pagination.meta.total
+					}}</span>
+					<li class="page-item"><a class="page-link" href="#" @click="fetchData(currentPage - 1)"
+							:disabled="currentPage === 1">Last</a></li>
+					<li class="page-item"><a class="page-link" href="#" @click="fetchData(currentPage + 1)"
+							:disabled="currentPage === totalPages">&raquo;</a></li>
+				</ul>
+			</div> -->
 		</div>
 	</div>
+	<!-- Overlay to close the menu -->
+	<div class="context_overlay" @click="closeContextMenu" v-if="showMenu" />
+
+	<!-- Custom Context Menu -->
+	<ContextMenu v-if="showMenu" :actions="contextMenuActions" @action-clicked="handleActionClick" :x="menuX" :y="menuY" />
 </template>
   
 <script>
-// import { inject } from 'vue'
+// import PdfThumbnail from '@/components/PdfThumbnail.vue';
 import { ref } from 'vue';
+import ContextMenu from '@/components/ContextMenu.vue';
 import * as pdfjsLib from '../../node_modules/pdfjs-dist/build/pdf';
 import "vue3-pdf-app/dist/icons/main.css";
-import _ from 'lodash';
-
-import ContextMenu from '@/components/ContextMenu.vue';
-
 export default {
 	components: {
 		ContextMenu,
 	},
 	props: {
-		documents: Array,
-		folder: {},// Define the prop type
+		documents: Array, // Define the prop type
+		folders: Array,// Define the prop type
 		pagination: Object,
 	},
 	data() {
@@ -84,46 +82,39 @@ export default {
 				{ label: 'Delete', action: 'delete' },
 				{ label: 'Bookmark', action: 'bookmark' },
 			]),
-			isActive: null,
-			searchTerm: '',
-			sortedColumn: 'updated_at',
-			sortOrder: 'asc',
+			thumbnails: [],
 			bookmark_documents: JSON.parse(localStorage.getItem("bookmark_documents")) || [],
-			thumbnails: []
+			bookmark_folders: JSON.parse(localStorage.getItem("bookmark_folders")) || [],
+			thumbnail: '',
 		}
 	},
+	// mounted() {
+	// 	this.thumbnails = [];
+	// 	this.$props.documents.forEach(document => {
+	// 		this.parseFile(document);
+	// 	});
+	// },  
 	watch: {
 		'$props.documents': {
 			immediate: true, // Execute the handler immediately after component is created
 			handler(newDocuments) {
-				this.$progress.start();
 				this.thumbnails = [];
 				newDocuments.forEach(document => {
 					this.parseFile(document);
 				});
-				this.$progress.finish();
 			},
 		},
 	},
 	computed: {
 		filteredRows() {
-			this.$progress.start();
-			let filteredRows = this.thumbnails;
-			if (this.searchTerm) {
-				const searchTermLowerCase = this.searchTerm.toLowerCase();
-				filteredRows = filteredRows.filter(row =>
-					Object.values(row).some(value => value.toString().toLowerCase().includes(searchTermLowerCase))
-				);
-			}
-
-			if (this.sortedColumn) {
-				// const orderMultiplier = this.sortOrder === 'asc' ? 1 : -1;
-				filteredRows = _.orderBy(filteredRows, [this.sortedColumn], [this.sortOrder]);
-			}
-
-			this.$progress.finish();
-			return filteredRows;
-		},
+			let folders = this.$props.folders;
+			folders.forEach(row => {
+				row['name'] = row.name ? row.name : '';
+				row['dataurl'] = null;
+				row['type'] = "folder";
+			});
+			return this.thumbnails.concat(folders);
+		}
 	},
 	methods: {
 		async parseFile(target_document) {
@@ -173,21 +164,33 @@ export default {
 				console.log(ex);
 			}
 		},
-		openItem(item) {
-			let path = this.baseUrl + '/api/showPdf/' + item.path.split('/')[2];
-			let showViewer = true;
-			this.$emit('show-viewer', path, showViewer);
+		openItem(item, index) {
+			// console.log(item);
+			if (item.type == 'folder') {
+				this.$router.push({
+					name: 'Repository',
+					// params: { folder: item.id },
+					query: { folder: item.id }
+				});
+			}
+			else {
+				this.highlistItem(item, index);
+			}
 		},
 		highlistItem(document, index) {
 			this.isActive = index;
-			this.$emit('update-select-document', document);
+			if (document.type == 'document') {
+				this.$emit('update-select-document', document);
+			} else {
+				this.$emit('update-current_folder', document);
+			}
 		},
-		showContextMenu(event, document) {
+		showContextMenu(event, item) {
 			event.preventDefault();
 			this.showMenu = true;
-			this.targetRow = document;
-			this.menuX = event.clientX - 430;
-			this.menuY = event.clientY - 180;
+			this.targetRow = item;
+			this.menuX = event.clientX - 130;
+			this.menuY = event.clientY - 170;
 		},
 		closeContextMenu() {
 			this.showMenu = false;
@@ -199,13 +202,22 @@ export default {
 					this.openItem(this.targetRow);
 					break;
 				case "bookmark":
-					// bookmarkly viewed folders
-					if (this.bookmark_documents.includes(parseInt(this.targetRow.id))) {
-						this.bookmark_documents = this.bookmark_documents.filter(item => item !== this.targetRow.id);   // Remove the ducment
-					}else{
-						this.bookmark_documents.push(this.targetRow.id);
+					if (this.targetRow.type == "document") {
+						if (this.bookmark_documents.includes(parseInt(this.targetRow.id))) {
+							this.bookmark_documents = this.bookmark_documents.filter(item => item != this.targetRow.id);   // Remove the ducment
+						} else {
+							this.bookmark_documents.push(this.targetRow.id);
+						}
+						localStorage.setItem("bookmark_documents", JSON.stringify(this.bookmark_documents));
 					}
-					localStorage.setItem("bookmark_documents", JSON.stringify(this.bookmark_documents));
+					else {
+						if (this.bookmark_folders.includes(parseInt(this.targetRow.id))) {
+							this.bookmark_folders = this.bookmark_folders.filter(item => item != this.targetRow.id);   // Remove the folder
+						} else {
+							this.bookmark_folders.push(this.targetRow.id);
+						}
+						localStorage.setItem("bookmark_folders", JSON.stringify(this.bookmark_folders));
+					}
 					break;
 				// Add cases for other tabs
 				default:
@@ -213,17 +225,8 @@ export default {
 				// console.log(action);
 				// console.log(this.targetRow);
 			}
-
-		},
-		sortBy(columnKey) {
-			if (this.sortedColumn == columnKey) {
-				this.sortOrder = this.sortOrder === 'asc' ? 'desc' : 'asc';
-			} else {
-				this.sortedColumn = columnKey;
-				this.sortOrder = 'asc';
-			}
-		},
-	},
+		}
+	}
 };
 </script>
   

@@ -1,7 +1,7 @@
 <template>
     <div style="font-weight:bolder">
         <div class="y">
-            <div class="c">
+            <div class="c" v-if="showFullTopBar">
                 <input class="g" name="repository_tab" value="0" type="radio" v-model="activeTab" />
                 <li class="x y tab" @click="_tab(0)"><span class="material-symbols-outlined" style="float:left; ">add</span>
                     &nbsp; New
@@ -16,7 +16,7 @@
                     </ul>
                 </li>
             </div>
-            <div class="c">
+            <div class="c" v-if="showFullTopBar">
                 <input class="g" name="repository_tab" value="1" type="radio" v-model="activeTab" />
                 <li class="x y tab" @click="_tab(1)"><span class="material-symbols-outlined"
                         style="float:left; ">search</span> &nbsp; Search</li>
@@ -31,7 +31,7 @@
                 <li class="x y tab" @click="_tab(3)"><span class="material-symbols-outlined"
                         style="float:left; ">view_list</span> &nbsp; List View</li>
             </div>
-            <div class="c">
+            <div class="c" v-if="showFullTopBar">
                 <input class="g" name="repository_tab" value="4" type="radio" v-model="activeTab" />
                 <li class="x y tab" @click="_tab(4)"><span class="material-symbols-outlined"
                         style="float:left; ">bar_chart</span> &nbsp; Reports</li>
@@ -45,13 +45,19 @@
             <div class="e"></div>
         </div>
     </div>
-    <ModalView :targetModal="targetModal" @close-modal="closeModalHandler" />
+    <ModalView :targetModal="targetModal" @close-modal="closeModalHandler" @get-folder="refreshData" :folders="folders" />
 </template>
 
 <script>
 import ModalView from "./ModalView.vue";
 
 export default {
+    props: {
+        folders: {
+            type: Array,
+            required: true
+        }
+    },
     components: {
         ModalView,
     },
@@ -62,21 +68,28 @@ export default {
             openSearch: false,
         };
     },
+    computed: {
+        showFullTopBar(){
+            return this.$route.name == "Repository";
+        }
+    },
     methods: {
         _tab(index) {
-            this.activeTab = index;
             switch (index) {
                 case 1:
                     this.openSearch = true;
                     break;
                 case 2:
                     this.$emit('show-grid-view');
+                    this.activeTab = index;
                     break;
                 case 3:
                     this.$emit('show-list-view');
+                    this.activeTab = index;
                     break;
                 case 4:
                     this.$emit('show-report');
+                    this.activeTab = index;
                     break;
                 case 5:
                     this.$emit('show-properties');
@@ -93,6 +106,9 @@ export default {
             // Update the targetModal prop to close the modal
             this.targetModal = '';
         },
+        refreshData(target_folder) {
+            this.$emit('get-folder', target_folder);
+        }
     },
 };
 </script>

@@ -84,7 +84,7 @@ li:hover {
 }
 
 :checked+.tab {
-    background-color: #355B11;
+    background-color: #355b11;
     color: white;
 }
 
