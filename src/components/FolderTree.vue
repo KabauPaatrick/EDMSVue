@@ -15,11 +15,15 @@
                         <span style="color:#000; text-decoration:none;" data-toggle="collapse" href="#{{ folder.name }}"
                             aria-expanded="true" aria-controls="{{ folder.name }}" class="row ml-1"
                             @contextmenu.prevent="showContextMenu($event, folder)">
-                            <i class="collapsed"><span class="material-symbols-outlined col-md-2 mr-1 pr-0"
+                            <i class="collapsed"><span class="material-symbols-outlined col-md-2"
                                     style="border:none;">folder</span></i>
-                            <i class="expanded"><span class="material-symbols-outlined col-md-2 mr-1 pr-0"
+                            <i class="expanded"><span class="material-symbols-outlined col-md-2"
                                     style="border:none;">folder_open</span></i>
-                            <span style="border:none" class=" col-md-7 ml-0 pl-0">{{ folder.name }}</span>
+                            <span style="border:none" class=" col-md-7 ml-0 pl-0">
+                                {{ folder.name }}
+                                <span v-if="bookmark_folders.includes(folder.id)" class="material-symbols-outlined"
+                                    style="font-size:15px; border: none">stars</span>
+                            </span>
                         </span>
                         <div id="{{ folder.name }}" class="collapse show" v-if="folder.children && folder.children.length">
                             <ul>
@@ -31,9 +35,9 @@
                                         <!-- @click="$emit('get-folder', child.id)"> -->
                                         <i class="collapsed">
                                             <span v-if="bookmark_folders.includes(child.id)"
-                                                class="material-symbols-outlined col-md-2 mr-1 pr-0"
+                                                class="material-symbols-outlined col-md-2"
                                                 style="font-size:30px;border:none;">folder_special</span>
-                                            <span v-else class="material-symbols-outlined col-md-2 mr-1 pr-0"
+                                            <span v-else class="material-symbols-outlined col-md-2"
                                                 style="font-size:30px;border:none;">folder</span>
                                         </i>
                                         <span style="border:none" class="col-md-7 ml-0 pl-0">{{ child.name }}</span>
@@ -51,14 +55,19 @@
 
     <!-- Custom Context Menu -->
     <ContextMenu v-if="showMenu" :actions="contextMenuActions" @action-clicked="handleActionClick" :x="menuX" :y="menuY" />
+    <EditFolder :editFolder="editFolder" v-if="showEditFolder" @close-modal="closeModalHandler" :folders="folders"
+        @get-folder="refreshData" />
 </template>
 <script>
 import { ref } from 'vue';
+import { useToast } from "vue-toastification";
 import ContextMenu from '@/components/ContextMenu.vue';
+import EditFolder from '@/components/modals/EditFolder.vue';
 
 export default {
     components: {
-        ContextMenu
+        ContextMenu,
+        EditFolder
     },
     props: {
         folders: {
@@ -72,6 +81,9 @@ export default {
     },
     data() {
         return {
+            toast: useToast(),
+            baseUrl: this.baseApiUrl,
+            token: localStorage.getItem("edms_token"),
             showMenu: ref(false),
             menuX: ref(0),
             menuY: ref(0),
@@ -82,6 +94,8 @@ export default {
                 { label: 'Bookmark', action: 'bookmark' },
             ]),
             bookmark_folders: JSON.parse(localStorage.getItem("bookmark_folders")) || [],
+            editFolder: ref({}),
+            showEditFolder: ref(false),
         }
     },
     methods: {
@@ -93,36 +107,98 @@ export default {
             // }
         },
         showContextMenu(event, folder) {
-            event.preventDefault();
-            this.showMenu = true;
-            this.targetRow = folder;
-            this.menuX = event.clientX;
-            this.menuY = event.clientY;
+            if (folder.id != 1) {
+                event.preventDefault();
+                this.showMenu = true;
+                this.targetRow = folder;
+                this.menuX = event.clientX;
+                this.menuY = event.clientY;
+            }
         },
         closeContextMenu() {
             this.showMenu = false;
         },
-        handleActionClick(action) {
+        async handleActionClick(action) {
             this.closeContextMenu();
             switch (action) {
                 case "bookmark":
                     // bookmarkly viewed folders
-					if (this.targetRow.type == "document") {
-						if (this.bookmark_documents.includes(parseInt(this.targetRow.id))) {
-							this.bookmark_documents = this.bookmark_documents.filter(item => item != this.targetRow.id);   // Remove the ducment
-						} else {
-							this.bookmark_documents.push(this.targetRow.id);
-						}
-						localStorage.setItem("bookmark_documents", JSON.stringify(this.bookmark_documents));
-					}
-					else {
-						if (this.bookmark_folders.includes(parseInt(this.targetRow.id))) {
-							this.bookmark_folders = this.bookmark_folders.filter(item => item != this.targetRow.id);   // Remove the folder
-						} else {
-							this.bookmark_folders.push(this.targetRow.id);
-						}
-						localStorage.setItem("bookmark_folders", JSON.stringify(this.bookmark_folders));
-					}
+                    if (this.targetRow.type == "document") {
+                        if (this.bookmark_documents.includes(parseInt(this.targetRow.id))) {
+                            this.bookmark_documents = this.bookmark_documents.filter(item => item != this.targetRow.id);   // Remove the ducment
+                            this.toast.success("Document removed from bookmarks Successfully!", {
+                                timeout: 5000
+                            });
+                        } else {
+                            this.bookmark_documents.push(this.targetRow.id);
+
+                            this.toast.success("Document added to bookmarks Successfully!", {
+                                timeout: 5000
+                            });
+                        }
+                        localStorage.setItem("bookmark_documents", JSON.stringify(this.bookmark_documents));
+                    }
+                    else {
+                        if (this.bookmark_folders.includes(parseInt(this.targetRow.id))) {
+                            this.bookmark_folders = this.bookmark_folders.filter(item => item != this.targetRow.id);   // Remove the folder
+                            this.toast.success("Folder removed from bookmarks Successfully!", {
+                                timeout: 5000
+                            });
+                        } else {
+                            this.bookmark_folders.push(this.targetRow.id);
+
+                            this.toast.success("Folder added to bookmarks Successfully!", {
+                                timeout: 5000
+                            });
+                        }
+                        localStorage.setItem("bookmark_folders", JSON.stringify(this.bookmark_folders));
+                    }
+                    break;
+                case "edit":
+                    this.editFolder = this.targetRow;
+                    this.showEditFolder = true;
+                    break;
+                case "delete":
+                    this.$swal.fire({
+                        title: "Are you sure?",
+                        text: "Once deleted, you will not be able to recover this Folder and All It's Contents!",
+                        icon: "warning",
+                        showCancelButton: true,
+                        confirmButtonText: "Yes, delete it!",
+                        cancelButtonText: "No, cancel!",
+                        reverseButtons: true,
+                        showLoaderOnConfirm: true,
+                    })
+                        .then((result) => {
+                            if (result.isConfirmed) {
+                                fetch(this.baseUrl + '/api/folders/delete/' + this.targetRow.id, {
+                                    method: 'GET',
+                                    headers: {
+                                        'Authorization': `Bearer ${this.token}`,
+                                        'Content-type': 'application/json'
+                                    }
+                                }).then(response => response.json()).then(response_data => {
+                                    if (response_data.data == 403) {
+                                        // Use it!
+                                        this.toast.error(response_data.message, {
+                                            timeout: 5000
+                                        });
+                                    } else {
+                                        // Use it!
+                                        this.toast.success(response_data.message, {
+                                            timeout: 5000
+                                        });
+                                        this.$emit('get-folder', response_data.data.data.parent_folder_id);
+                                    }
+                                });
+                                // console.log(response);
+                                // const data = response.json();
+                            } else {
+                                this.toast.success("Folder is safe!", {
+                                    timeout: 5000
+                                });
+                            }
+                        });
                     break;
                 // Add cases for other tabs
                 default:
@@ -130,6 +206,14 @@ export default {
                 // console.log(action);
                 // console.log(this.targetRow);
             }
+        },
+        closeModalHandler() {
+            // Update the prop to close the modal
+            this.showEditFolder = false;
+            this.showDeleteFolder = false;
+        },
+        refreshData(target_folder) {
+            this.$emit('get-folder', target_folder);
         }
     }
 };

@@ -45,7 +45,8 @@
             <div class="e"></div>
         </div>
     </div>
-    <ModalView :targetModal="targetModal" @close-modal="closeModalHandler" @get-folder="refreshData" :folders="folders" />
+    <ModalView :targetModal="targetModal" @close-modal="closeModalHandler" @get-folder="refreshData"
+        :folders="folders" :current_folder="current_folder" />
 </template>
 
 <script>
@@ -53,6 +54,7 @@ import ModalView from "./ModalView.vue";
 
 export default {
     props: {
+        current_folder: {},
         folders: {
             type: Array,
             required: true
@@ -69,7 +71,7 @@ export default {
         };
     },
     computed: {
-        showFullTopBar(){
+        showFullTopBar() {
             return this.$route.name == "Repository";
         }
     },

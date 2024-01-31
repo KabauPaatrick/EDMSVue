@@ -2,7 +2,7 @@
     <div id="myModal" class="modalIn" v-if="targetModal != ''">
         <div class="modalIn-content">
             <span class="close" @click="closeModal()">&times;</span>
-            <h2 id="modalTitle" class="modalIn-title"></h2>
+            <h2 id="modalTitle" class="modalIn-title">{{ targetModal }}</h2>
             <!-- Add content for "New" modal here -->
             <!--------------------------------------------------------------------CREATE NEW CABINET CONTENT-------------------------------------------------------------------->
             <div class="content y" style="padding:2%;" id="createCabinetModal" v-if="targetModal === 'New Cabinet'">
@@ -32,7 +32,7 @@
                     <div class="form-group">
                         <label for="cabinet_id">Select Cabinet:</label>
                         <select class="form-control" id="selected_cabinet1" name="cabinet_id" required v-model="cabinet_id">
-                            <option disabled selected>Select Cabinet</option>
+                            <option disabled value="null">Select Cabinet</option>
                             <option v-for="folder in folders" :key="folder.id" :value="folder.id">{{ folder.name }}</option>
                         </select>
                     </div>
@@ -50,7 +50,6 @@
             <div class="content y" style="padding:2%;" id="uploadDocumetstModal"
                 v-if="targetModal === 'Upload Document(s) From Computer'">
                 <form v-on:submit.prevent="uploadDocuments">
-                    <input name="folder_id" value="{{ folders[0].id }}" v-model="folder_id"/> 
                     <div class="form-group">
                         <label for="version_name">Version:</label>
                         <input type="number" class="form-control" id="version_name" aria-describedby="version_name"
@@ -64,7 +63,8 @@
                     <div class="form-group">
                         <!-- File input for multiple file uploads -->
                         <label for="document">Select Files:</label>
-                        <input type="file" ref="document" name="document" @change="handleFileChange" accept="application/pdf" required>
+                        <input type="file" ref="document" name="document" @change="handleFileChange"
+                            accept="application/pdf" required>
                     </div>
 
                     <button type="submit" name="uploadDocuments" class="btn btn-primary">Upload Files</button>
@@ -83,6 +83,7 @@ import { useToast } from "vue-toastification";
 
 export default {
     props: {
+        current_folder: {},
         targetModal: String, // Define the prop type
         folders: {
             type: Array,
@@ -157,7 +158,7 @@ export default {
                     'Content-type': 'application/json'
                 },
                 body: JSON.stringify({
-                    parent_folder_id: this.cabinet_id,
+                    parent_folder_id: this.$props.current_folder.id,
                     name: this.folder_name
                 })
             });
@@ -181,11 +182,10 @@ export default {
         },
         async uploadDocuments() {
             let formData = new FormData();
-            formData.append('folder_id', this.folder_id);
+            formData.append('folder_id', this.$props.current_folder.id);
             formData.append('version_name', this.version_name);
             formData.append('document_name', this.document_name);
-            formData.append('document', this.$refs.document.files[0]);         
-            console.log('Form Data:', [...formData]);
+            formData.append('document', this.$refs.document.files[0]);
             const response = await fetch(this.baseUrl + '/api/folder/documents/upload', {
                 method: 'POST',
                 headers: {

@@ -1,20 +1,20 @@
 <!-- eslint-disable vue/no-unused-components -->
 <template>
 	<!-- ... -->
-	<div class="content" :style="{ width: openProperties ? '65vw' : auto }">
+	<div class="content" :style="{ width: openProperties ? '65vw' : '100vw' }">
 		<div class="container-fluid">
 			<div class="content y">
 				<div class="container-fluid px-5 py-2 bg-light rounded">
 					<span v-for="path in current_folder_path" :key="path"> > {{ path }}</span>
 				</div>
 				<TopNav @show-list-view="showListView" @show-grid-view="showGridView" @show-properties="showProperties"
-					@show-report="showReport" :folders="folders" @get-folder="refreshData" />
+					@show-report="showReport" :folders="folders" @get-folder="refreshData" :current_folder="current_folder"/>
 				{{ folder }}
-				<div class="row ml-0">
+				<div class="row ml-3">
 					<FolderTree :folders="folders" :target_folder_parent_id="target_folder_parent_id" class="col-3"
 						@get-folder="refreshData" v-if="!showViewer" />
 					<!-- Direct usage of Grid and List View -->
-					<div class="col-9 ml-0">
+					<div class="col-9">
 						<ListView :folder="folders.find(folder => folder.id == target_folder)" :documents="documents"
 							:pagination="pagination" v-bind:target_folder="target_folder" v-if="listview"
 							@update-select-document="updateSelectDocument" @show-viewer="renderPdfViewer" />

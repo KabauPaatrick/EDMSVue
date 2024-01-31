@@ -14,7 +14,8 @@ import Vue3Progress from "vue3-progress";
 
 
 const app = createApp(App);
-app.config.globalProperties.baseApiUrl = 'http://127.0.0.1:8000';
+// app.config.globalProperties.baseApiUrl = 'http://127.0.0.1:8000';
+app.config.globalProperties.baseApiUrl = 'https://demo-openchs.bitz-itc.com/edms/'
 
 app.use(VueSweetalert2);
 const toast_options = {
