@@ -71,7 +71,7 @@
 							:class="{ 'table-active': isActive == document.id }"
 							@contextmenu.prevent="showContextMenu($event, document)">
 							<td>
-								<span v-if="bookmark_documents.includes(document.id)" class="material-symbols-outlined"
+								<span v-if="Array.isArray(bookmark_documents) && bookmark_documents.includes(document.id)" class="material-symbols-outlined"
 									style="font-size:30px;">book</span>
 								<span class="material-symbols-outlined" v-else
 									style="font-size:30px">insert_drive_file</span>

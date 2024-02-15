@@ -81,6 +81,8 @@ export default {
                 return 2;
             case "Bookmarks":
                 return 3;
+            case "Workflows":
+                return 5;
             // Add cases for other tabs
             default:
                 return 0;
@@ -108,7 +110,7 @@ export default {
                     this.$router.push('/saved_search');
                     break;
                 case 5:
-                    this.$router.push('/');
+                    this.$router.push('/Workflows');
                     break;
                 case 6:
                     this.$router.push('/documentviewer');

@@ -7,40 +7,45 @@
             <div class="tree">
                 <ul class="pl-0 ml-0">
                     <span style="color:#000; text-decoration:none;" data-toggle="collapse" href="#back" class="x y nav"
-                        aria-expanded="false" aria-controls="back" @click="$emit('get-folder', target_folder_parent_id)">
+                          aria-expanded="false" aria-controls="back"
+                          @click="$emit('get-folder', current_folder.parent.id)">
                         <i class="collapsed"><span class="material-symbols-outlined">first_page</span></i>
                         <span style="border:none">&nbsp;Back</span>
                     </span>
-                    <li v-for="folder in folders" :key="folder.id">
-                        <span style="color:#000; text-decoration:none;" data-toggle="collapse" href="#{{ folder.name }}"
-                            aria-expanded="true" aria-controls="{{ folder.name }}" class="row ml-1"
-                            @contextmenu.prevent="showContextMenu($event, folder)">
+                    <!-- <li v-for="folder in folders" :key="folder.id"> -->
+                    <li v-if="current_folder.name">
+                        <span style="color:#000; text-decoration:none;" data-toggle="collapse"
+                              href="#{{ current_folder.name }}" aria-expanded="true"
+                              aria-controls="{{ current_folder.name }}"
+                              class="row ml-1" @contextmenu.prevent="showContextMenu($event, current_folder)">
                             <i class="collapsed"><span class="material-symbols-outlined col-md-2"
-                                    style="border:none;">folder</span></i>
+                                                       style="border:none;">folder</span></i>
                             <i class="expanded"><span class="material-symbols-outlined col-md-2"
-                                    style="border:none;">folder_open</span></i>
+                                                      style="border:none;">folder_open</span></i>
                             <span style="border:none" class=" col-md-7 ml-0 pl-0">
-                                {{ folder.name }}
-                                <span v-if="bookmark_folders.includes(folder.id)" class="material-symbols-outlined"
-                                    style="font-size:15px; border: none">stars</span>
+                                {{ current_folder.name }}
+                                <span v-if="Array.isArray(bookmark_folders) && bookmark_folders.includes(current_folder.id)"
+                                      class="material-symbols-outlined"
+                                      style="font-size:15px; border: none">stars</span>
                             </span>
                         </span>
-                        <div id="{{ folder.name }}" class="collapse show" v-if="folder.children && folder.children.length">
+                        <div id="{{ current_folder.name }}" class="collapse show" v-if="folders && folders.length">
                             <ul>
-                                <li v-for="child in folder.children" :key="child.id"
-                                    @contextmenu.prevent="showContextMenu($event, child)">
+                                <li v-for="folder in folders" :key="folder.id"
+                                    @contextmenu.prevent="showContextMenu($event, folder)">
                                     <span style="color:#000; text-decoration:none; " data-toggle="collapse"
-                                        href="#{{ child.name }}" aria-expanded="false" aria-controls="{{ child.name }}"
-                                        @click="expandTree($event, child.id)" class="row">
-                                        <!-- @click="$emit('get-folder', child.id)"> -->
+                                          href="#{{ folder.name }}" aria-expanded="false"
+                                          aria-controls="{{ folder.name }}"
+                                          @click="expandTree($event, folder.id)" class="row">
+                                        <!-- @click="$emit('get-folder', folder.id)"> -->
                                         <i class="collapsed">
-                                            <span v-if="bookmark_folders.includes(child.id)"
-                                                class="material-symbols-outlined col-md-2"
-                                                style="font-size:30px;border:none;">folder_special</span>
+                                            <span v-if="Array.isArray(bookmark_folders) && bookmark_folders.includes(folder.id)"
+                                                  class="material-symbols-outlined col-md-2"
+                                                  style="font-size:30px;border:none;">folder_special</span>
                                             <span v-else class="material-symbols-outlined col-md-2"
-                                                style="font-size:30px;border:none;">folder</span>
+                                                  style="font-size:30px;border:none;">folder</span>
                                         </i>
-                                        <span style="border:none" class="col-md-7 ml-0 pl-0">{{ child.name }}</span>
+                                        <span style="border:none" class="col-md-7 ml-0 pl-0">{{ folder.name }}</span>
                                     </span>
                                 </li>
                             </ul>
@@ -51,16 +56,17 @@
         </div>
     </div>
     <!-- Overlay to close the menu -->
-    <div class="context_overlay" @click="closeContextMenu" v-if="showMenu" />
+    <div class="context_overlay" @click="closeContextMenu" v-if="showMenu"/>
 
     <!-- Custom Context Menu -->
-    <ContextMenu v-if="showMenu" :actions="contextMenuActions" @action-clicked="handleActionClick" :x="menuX" :y="menuY" />
+    <ContextMenu v-if="showMenu" :actions="contextMenuActions" @action-clicked="handleActionClick" :x="menuX"
+                 :y="menuY"/>
     <EditFolder :editFolder="editFolder" v-if="showEditFolder" @close-modal="closeModalHandler" :folders="folders"
-        @get-folder="refreshData" />
+                @get-folder="refreshData" :current_folder="current_folder"/>
 </template>
 <script>
-import { ref } from 'vue';
-import { useToast } from "vue-toastification";
+import {ref} from 'vue';
+import {useToast} from "vue-toastification";
 import ContextMenu from '@/components/ContextMenu.vue';
 import EditFolder from '@/components/modals/EditFolder.vue';
 
@@ -74,8 +80,8 @@ export default {
             type: Array,
             required: true,
         },
-        target_folder_parent_id: {
-            type: String,
+        current_folder: {
+            type: Object,
             required: true
         },
     },
@@ -89,14 +95,18 @@ export default {
             menuY: ref(0),
             targetRow: ref({}),
             contextMenuActions: ref([
-                { label: 'Edit', action: 'edit' },
-                { label: 'Delete', action: 'delete' },
-                { label: 'Bookmark', action: 'bookmark' },
+                {label: 'Edit', action: 'edit'},
+                {label: 'Delete', action: 'delete'},
+                {label: 'Bookmark', action: 'bookmark'},
             ]),
-            bookmark_folders: JSON.parse(localStorage.getItem("bookmark_folders")) || [],
+            // bookmark_folders: JSON.parse(localStorage.getItem("bookmark_folders")) || [],
+            bookmark_folders: [],
             editFolder: ref({}),
             showEditFolder: ref(false),
         }
+    },
+    mounted() {
+        this.bookmark_folders = this.fetchFolderBookmarks();
     },
     methods: {
         expandTree(event, id) {
@@ -123,35 +133,14 @@ export default {
             switch (action) {
                 case "bookmark":
                     // bookmarkly viewed folders
-                    if (this.targetRow.type == "document") {
-                        if (this.bookmark_documents.includes(parseInt(this.targetRow.id))) {
-                            this.bookmark_documents = this.bookmark_documents.filter(item => item != this.targetRow.id);   // Remove the ducment
-                            this.toast.success("Document removed from bookmarks Successfully!", {
-                                timeout: 5000
-                            });
-                        } else {
-                            this.bookmark_documents.push(this.targetRow.id);
-
-                            this.toast.success("Document added to bookmarks Successfully!", {
-                                timeout: 5000
-                            });
-                        }
-                        localStorage.setItem("bookmark_documents", JSON.stringify(this.bookmark_documents));
-                    }
-                    else {
-                        if (this.bookmark_folders.includes(parseInt(this.targetRow.id))) {
-                            this.bookmark_folders = this.bookmark_folders.filter(item => item != this.targetRow.id);   // Remove the folder
-                            this.toast.success("Folder removed from bookmarks Successfully!", {
-                                timeout: 5000
-                            });
-                        } else {
-                            this.bookmark_folders.push(this.targetRow.id);
-
-                            this.toast.success("Folder added to bookmarks Successfully!", {
-                                timeout: 5000
-                            });
-                        }
-                        localStorage.setItem("bookmark_folders", JSON.stringify(this.bookmark_folders));
+                    if (Array.isArray(this.bookmark_folders) && this.bookmark_folders.includes(parseInt(this.targetRow.id))) {
+                        this.bookmark_folders = this.bookmark_folders.filter(item => item != this.targetRow.id);   // Remove the folder
+                        let target_folder = this.$props.folders.find(item => item.id == this.targetRow.id);
+                        this.$props.folders.splice(target_folder, 1);
+                        this.postBookMarks(this.targetRow, 'folder');
+                    } else {
+                        this.postBookMarks(this.targetRow, 'folder');
+                        this.bookmark_folders.push(this.targetRow.id);
                     }
                     break;
                 case "edit":
@@ -188,7 +177,7 @@ export default {
                                         this.toast.success(response_data.message, {
                                             timeout: 5000
                                         });
-                                        this.$emit('get-folder', response_data.data.data.parent_folder_id);
+                                        this.$emit('get-folder', this.targetRow.parent_folder_id);
                                     }
                                 });
                                 // console.log(response);
@@ -210,10 +199,41 @@ export default {
         closeModalHandler() {
             // Update the prop to close the modal
             this.showEditFolder = false;
-            this.showDeleteFolder = false;
         },
         refreshData(target_folder) {
             this.$emit('get-folder', target_folder);
+        },
+        async postBookMarks(item, type) {
+            const response = await fetch(this.baseUrl + '/api/bookmarks', {
+                method: 'POST',
+                headers: {
+                    'Authorization': `Bearer ${this.token}`,
+                    'Content-type': 'application/json'
+                },
+                data: {
+                    item_id: item.id,
+                    type: type
+                }
+            });
+            const data = await response.json();
+            console.log(data);
+        },
+        async fetchFolderBookmarks() {
+            try {
+                const response = await fetch(this.baseUrl + '/api/bookmarks', {
+                    method: 'GET',
+                    headers: {
+                        'Authorization': `Bearer ${this.token}`,
+                        'Content-type': 'application/json'
+                    }
+                });
+                const data = await response.json();
+                let folders = data.filter(item => item.type == 'folder');
+                return folders.map(({item_id}) => item_id);
+            } catch (error) {
+                console.error('Error fetching bookmarks:', error);
+                // Handle errors gracefully
+            }
         }
     }
 };
@@ -261,8 +281,8 @@ export default {
     cursor: pointer;
 }
 
-.tree>ul>li::before,
-.tree>ul>li::after {
+.tree > ul > li::before,
+.tree > ul > li::after {
     border: 0
 }
 
@@ -276,8 +296,8 @@ export default {
     /* border: 2px solid #94a0b4; */
 }
 
-[aria-expanded="false"]>.expanded,
-[aria-expanded="true"]>.collapsed {
+[aria-expanded="false"] > .expanded,
+[aria-expanded="true"] > .collapsed {
     display: none;
 }
 

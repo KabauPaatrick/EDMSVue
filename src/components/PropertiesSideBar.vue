@@ -32,7 +32,7 @@
                         <template v-if="activeTab === index">
                             <component :is="tab.component" :document="document" :lookups="lookups" :serials="serials"
                                 :current_folder="current_folder" @update-index-field-data="updateIndexFieldData"
-                                @update-meta-data-data="updateMetaDataData" />
+                                @update-meta-data-data="updateMetaDataData" @get-folder="refreshData"/>
                         </template>
                     </div>
                 </div>
@@ -45,7 +45,7 @@
 import MetaDataTab from "@/components/MetaDataTab.vue"; // Import your component for Meta Data
 import IndexFieldsTab from "@/components/IndexFieldsTab.vue";//Import your component for Index Fields
 import PermissionsTab from "@/components/PermissionsTab.vue";
-// import AutomationTab from "@/components/AutomationTab.vue";
+import AutomationTab from "@/components/AutomationTab.vue";
 // Import other components for Permissions and Automations if available
 import { useToast } from "vue-toastification";
 
@@ -74,7 +74,7 @@ export default {
                 { name: 'Meta Data', component: MetaDataTab }, // Specify the component for Meta Data
                 { name: 'Index Fields', component: IndexFieldsTab },
                 { name: 'Permissions', component: PermissionsTab },
-                { name: 'Automation', component: '' },
+                { name: 'Automation', component: AutomationTab },
                 // Specify the component for Index Fields
                 // Add more tabs as needed
             ],
@@ -84,7 +84,7 @@ export default {
         MetaDataTab,
         IndexFieldsTab,
         PermissionsTab,
-        // AutomationTab,
+        AutomationTab,
         // Register other components for Permissions and Automations if available
     },
     mounted() {
@@ -153,9 +153,9 @@ export default {
                 this.serials_pagination.meta = data.data.meta;
             }
         },
-        refreshData(target_folder) {
-            this.$emit('refresh-data', target_folder);
-        },
+        // refreshData(target_folder) {
+        //     this.$emit('refresh-data', target_folder);
+        // },
         updateIndexFieldData(action, data) {
             if (action == "add") {
                 this.$props.current_folder.fields.push(data);
@@ -176,7 +176,10 @@ export default {
                 let old_data = this.$props.document.doc_fields.find(doc_field => doc_field.id == data.id);
                 this.$props.document.doc_fields.splice(this.$props.document.doc_fields.indexOf(old_data), 1);
             }
-        }
+        },
+		refreshData(folder_id){
+			this.$emit('get-folder', folder_id);
+		},
     },
 };
 </script>

@@ -85,7 +85,7 @@ export default {
 								}
 							})
 						});
-						this.$props.document.folder.fields.forEach((field) => {
+						this.$props.current_folder.fields.forEach((field) => {
 							if (!valued_fields.includes(field.id)) {
 								fields_array.push({ id: field.id, label: field.field_name });
 							}
@@ -96,9 +96,10 @@ export default {
 			}
 			return [];
 		},
+		//TODO:: check the is_lookup and lookup_id to find the lookup options
 		lookup_options() {
 			let lookup_array = [];
-			let main_lookup_id = this.$props.document.folder.fields.find(field => field.id == this.newDocField.field_id).field_datatype.split('-')[1];
+			let main_lookup_id = this.$props.current_folder.fields.find(field => field.id == this.newDocField.field_id).field_datatype.split('-')[1];
 			let main_lookup = this.$props.lookups.find((lookup) => lookup.id == main_lookup_id);
 			main_lookup.children.forEach((child) => {
 				lookup_array.push(this.parseItem(child));
@@ -108,7 +109,7 @@ export default {
 		showLookupSelector() {
 			if (this.newDocField.field_id) {
 				// return true;
-				return this.$props.document.folder.fields.find(field => field.id == this.newDocField.field_id).field_datatype.split('-')[0] == 'lookups';
+				return this.$props.current_folder.fields.find(field => field.id == this.newDocField.field_id).field_datatype.split('-')[0] == 'lookups';
 			}
 			return false;
 		},
@@ -143,7 +144,7 @@ export default {
 				body: JSON.stringify({
 					document_id: field.document_id,
 					field_id: field.field_id,
-					value: "Me"
+					value: "Different Value"
 				})
 			});
 			const data = await response.json();

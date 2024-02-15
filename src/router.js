@@ -29,11 +29,11 @@ const routes = [
     name: 'Bookmarks',
     component: () => import('./views/BookmarksView.vue'),
   },
-  // {
-  //   path:'/saved_search',
-  //   name: 'ThumbnailsViewer', // Enclose in quotes
-  //   component: () => import('./components/ThumbnailsViewer.vue')
-  // },
+  {
+    path:'/workflows',
+    name: 'Workflows',
+    component: () => import('./views/WorkflowView.vue')
+  },
   // {
   //   path: '/repository/:id',
   //   name: 'repository',

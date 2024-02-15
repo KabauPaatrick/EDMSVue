@@ -52,7 +52,7 @@
                 <form v-on:submit.prevent="uploadDocuments">
                     <div class="form-group">
                         <label for="version_name">Version:</label>
-                        <input type="number" class="form-control" id="version_name" aria-describedby="version_name"
+                        <input type="text" class="form-control" id="version_name" aria-describedby="version_name"
                             placeholder="Enter Starting Version" v-model="version_name" required>
                     </div>
                     <div class="form-group">
@@ -62,10 +62,22 @@
                     </div>
                     <div class="form-group">
                         <!-- File input for multiple file uploads -->
-                        <label for="document">Select Files:</label>
-                        <input type="file" ref="document" name="document" @change="handleFileChange"
-                            accept="application/pdf" required>
+                        <label for="document">Select File (s):</label>
+                        <input type="file" ref="document" name="document"
+                            accept=".pdf, .jpeg, .jpg, .png, .doc, .docx, .xls, .xlsx, .csv, application/msword, application/vnd.ms-excel, application/vnd.openxmlformats-officedocument.wordprocessingml.document, application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+                            multiple required>
                     </div>
+                    <div class="form-group">
+                        <!-- File input for multiple file uploads -->
+                        <label for="document">Or Scan:</label>
+
+                        <center>
+                            <span class="material-symbols-outlined"
+                                style="font-size:30px">scanner</span>
+                                <br>Promp Scanning
+                        </center>
+                    </div>
+
 
                     <button type="submit" name="uploadDocuments" class="btn btn-primary">Upload Files</button>
                 </form>
@@ -158,7 +170,7 @@ export default {
                     'Content-type': 'application/json'
                 },
                 body: JSON.stringify({
-                    parent_folder_id: this.$props.current_folder.id,
+                    parent_folder_id: this.cabinet_id,
                     name: this.folder_name
                 })
             });
@@ -181,52 +193,54 @@ export default {
             //     this.$swal(data);
         },
         async uploadDocuments() {
-            let formData = new FormData();
-            formData.append('folder_id', this.$props.current_folder.id);
-            formData.append('version_name', this.version_name);
-            formData.append('document_name', this.document_name);
-            formData.append('document', this.$refs.document.files[0]);
-            const response = await fetch(this.baseUrl + '/api/folder/documents/upload', {
-                method: 'POST',
-                headers: {
-                    'Authorization': `Bearer ${this.token}`,
+            for (const file of this.$refs.document.files) {
+                let formData = new FormData();
+                formData.append('folder_id', this.$props.current_folder.id);
+                formData.append('version_name', this.version_name);
+                formData.append('document_name', this.document_name);
+                formData.append('document', file);
+                const response = await fetch(this.baseUrl + '/api/folder/documents/upload', {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': `Bearer ${this.token}`,
 
-                },
-                body: formData
-            });
-            if (!response.ok) {
-                throw new Error(`HTTP error! Status: ${response.status}`);
-            }
-            const data = await response.json();
-            console.log(data);
-            if (data.success == false) {
-                // Use it!
-                this.toast.error(data.message, {
-                    timeout: 5000
+                    },
+                    body: formData
                 });
-                if (data.message == "Validation Error.") {
-                    let errors = data.data;
-                    for (const key in errors) {
-                        if (Object.hasOwnProperty.call(errors, key)) {
-                            const errorMessages = errors[key];
+                if (!response.ok) {
+                    throw new Error(`HTTP error! Status: ${response.status}`);
+                }
+                const data = await response.json();
+                console.log(data);
+                if (data.success == false) {
+                    // Use it!
+                    this.toast.error(data.message, {
+                        timeout: 5000
+                    });
+                    if (data.message == "Validation Error.") {
+                        let errors = data.data;
+                        for (const key in errors) {
+                            if (Object.hasOwnProperty.call(errors, key)) {
+                                const errorMessages = errors[key];
 
-                            // Loop through each error message in the array
-                            errorMessages.forEach(errorMessage => {
-                                // Show a toast notification for each error message
-                                this.toast.error(`${key}: ${errorMessage}`, {
-                                    timeout: 5000
+                                // Loop through each error message in the array
+                                errorMessages.forEach(errorMessage => {
+                                    // Show a toast notification for each error message
+                                    this.toast.error(`${key}: ${errorMessage}`, {
+                                        timeout: 5000
+                                    });
                                 });
-                            });
+                            }
                         }
                     }
+                } else {
+                    // Use it!
+                    this.toast.success(data.message, {
+                        timeout: 5000
+                    });
+                    // console.log(data.data.data);
+                    this.$emit('get-folder', data.data.data.folder_id);
                 }
-            } else {
-                // Use it!
-                this.toast.success(data.message, {
-                    timeout: 5000
-                });
-                // console.log(data.data.data);
-                this.$emit('get-folder', data.data.data.folder_id);
             }
             this.closeModal();
 

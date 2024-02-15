@@ -1,35 +1,38 @@
 <!-- eslint-disable vue/no-unused-components -->
 <template>
 	<!-- ... -->
-	<div class="content" :style="{ width: openProperties ? '65vw' : '100vw' }">
+	<!-- <div class="content" :style="{ width: openProperties ? '65vw' : '100vw' }"> -->
+	<div class="content" :style="{ width: openProperties ? '75%' : '100%' }">
 		<div class="container-fluid">
 			<div class="content y">
 				<div class="container-fluid px-5 py-2 bg-light rounded">
 					<span v-for="path in current_folder_path" :key="path"> > {{ path }}</span>
 				</div>
 				<TopNav @show-list-view="showListView" @show-grid-view="showGridView" @show-properties="showProperties"
-					@show-report="showReport" :folders="folders" @get-folder="refreshData" :current_folder="current_folder"/>
-				{{ folder }}
+					@show-report="showReport" :folders="folders" @get-folder="refreshData"
+					:current_folder="current_folder" />
 				<div class="row ml-3">
-					<FolderTree :folders="folders" :target_folder_parent_id="target_folder_parent_id" class="col-3"
-						@get-folder="refreshData" v-if="!showViewer" />
+					<FolderTree :folders="folders" :current_folder="current_folder" class="col-3" @get-folder="refreshData"
+						v-if="!showViewer" />
 					<!-- Direct usage of Grid and List View -->
 					<div class="col-9">
-						<ListView :folder="folders.find(folder => folder.id == target_folder)" :documents="documents"
-							:pagination="pagination" v-bind:target_folder="target_folder" v-if="listview"
-							@update-select-document="updateSelectDocument" @show-viewer="renderPdfViewer" />
-						<GridView :folder="folders.find(folder => folder.id == target_folder)" :documents="documents"
-							:pagination="pagination" v-bind:target_folder="target_folder" v-if="gridview"
-							@update-select-document="updateSelectDocument" @show-viewer="renderPdfViewer" />
+						<ListView :current_folder="current_folder" :documents="documents" :pagination="pagination"
+							v-bind:target_folder="target_folder" v-if="listview" :folders="folders"
+							@update-select-document="updateSelectDocument" @show-viewer="renderPdfViewer"
+							@get-folder="refreshData" />
+						<GridView :current_folder="current_folder" :documents="documents" :pagination="pagination"
+							v-bind:target_folder="target_folder" v-if="gridview" :folders="folders"
+							@update-select-document="updateSelectDocument" @show-viewer="renderPdfViewer"
+							@get-folder="refreshData" />
 						<ReportView v-if="openReport" />
 					</div>
 				</div>
-				<DocumentViewer v-if="showViewer" :actual_file="actual_file" />
+				<DocumentViewer v-if="showViewer" :actual_file="actual_file" class="ml-3 mr-5" />
 			</div>
 		</div>
 	</div><!-- /.container-fluid -->
-	<PropertiesSideBar v-if="openProperties" :style="{ width: openProperties ? '25vw' : '0vw' }" @hide-sidebar="hideSidebar"
-		:document="document" :current_folder="current_folder"  @refresh-data="refreshData"/>
+	<PropertiesSideBar v-if="openProperties" :style="{ width: openProperties ? '25%' : '0%' }" @hide-sidebar="hideSidebar"
+		:document="document" :current_folder="current_folder" @get-folder="refreshData" />
 </template>
   
 
@@ -45,9 +48,9 @@ import FolderTree from "@/components/FolderTree.vue";
 import { useToast } from "vue-toastification";
 
 export default {
-	// props: {
-	// 	folder: String,
-	// },
+	props: {
+		folder_id: String,
+	},
 	components: {
 		ListView,
 		GridView,
@@ -62,10 +65,12 @@ export default {
 			toast: useToast(),
 			baseUrl: this.baseApiUrl,
 			token: localStorage.getItem("edms_token"),
-			recent_folders: JSON.parse(localStorage.getItem("recent_folders")) || [],
-			recent_documents: JSON.parse(localStorage.getItem("recent_documents")) || [],
+			// recent_documents: JSON.parse(localStorage.getItem("recent_documents")) || [],
+			recent_documents: [],
+			// recent_folders: JSON.parse(localStorage.getItem("recent_folders")) || [],
+			recent_folders: [],
 			target_folder: this.$props.theTargetFolder ? this.$props.theTargetFolder : 1,
-			target_folder_parent_id: {},
+			// target_folder_parent_id: {},
 			listview: true,
 			gridview: false,
 			openReport: false,
@@ -75,6 +80,7 @@ export default {
 			document: null,
 			actual_file: '',
 			showViewer: false,
+			folder: {},
 			pagination: {
 				links: '',
 				meta: ''
@@ -83,19 +89,20 @@ export default {
 	},
 	computed: {
 		current_folder() {
-			let current_folder = this.folders.find(folder => folder.id == this.target_folder) ? this.folders.find(folder => folder.id == this.target_folder) :
-				{};
+			let current_folder = this.folder;
 			return current_folder;
 		},
 		current_folder_path() {
-			let current_folder_path = this.folders.find(folder => folder.id == this.target_folder) ? this.folders.find(folder => folder.id == this.target_folder).path : "";
-			return current_folder_path.split("/");
+			return this.current_folder.path ? this.current_folder.path.split("/") : "";
+			// return current_folder_path.split("/");
 		}
 	},
 	mounted() {
-		this.target_folder = this.$route.query.folder ? this.$route.query.folder : 1;
+		this.target_folder = this.$route.query.folder_id ? this.$route.query.folder_id : 1;
 		this.getFolders(this.target_folder);
 		this.getDocuments(this.target_folder);
+		this.recent_documents = this.fetchDocumentRecents();
+		this.recent_folders = this.fetchFolderRecents();
 	},
 	methods: {
 		showGridView() {
@@ -103,12 +110,14 @@ export default {
 			this.gridview = true;
 			this.openReport = false;
 			this.showViewer = false;
+			this.openProperties = false;
 		},
 		showListView() {
 			this.listview = true;
 			this.gridview = false;
 			this.openReport = false;
 			this.showViewer = false;
+			this.openProperties = false;
 		},
 		showProperties() {
 			this.openProperties = true;
@@ -118,6 +127,7 @@ export default {
 			this.gridview = false;
 			this.openReport = true;
 			this.showViewer = false;
+			this.openProperties = false;
 		},
 		hideSidebar() {
 			this.openProperties = false;
@@ -125,7 +135,7 @@ export default {
 		async getFolders(target_folder) {
 			this.$progress.start();
 
-			const response = await fetch(this.baseUrl + '/api/folders/' + target_folder, {
+			const response = await fetch(this.baseUrl + '/api/folder/show/' + target_folder, {
 				method: 'GET',
 				headers: {
 					'Authorization': `Bearer ${this.token}`,
@@ -133,68 +143,36 @@ export default {
 				}
 			});
 			const data = await response.json();
-			if (data.data.data && data.data.data.length > 0) {
+			if (data.success == true) {
 				this.toast.success(data.message, {
 					timeout: 2000
 				});
-				this.folders = [];
-				this.folders = data.data.data;
-				this.folders.map(folder => {
-					folder.children = this.getChildren(folder.id);
-					return folder;
-				});
-				this.folders = this.folders.filter(folder => folder.id == target_folder);
-				this.target_folder_parent_id = this.folders.find(folder => folder.id == target_folder).parent_folder_id;
-				// console.log(this.target_folder_parent_id);
+				this.folder = data.data.data;
+				this.folders = this.folder.children.filter(child => child.id != child.parent_folder_id);
+				// this.target_folder_parent_id = this.folder.parent.id;
 			} else {
-				const response = await fetch(this.baseUrl + '/api/folder/show/' + target_folder, {
-					method: 'GET',
-					headers: {
-						'Authorization': `Bearer ${this.token}`,
-						'Content-type': 'application/json'
-					}
+				// Use it!
+				this.toast.error(data.message, {
+					timeout: 2000
 				});
-				const data = await response.json();
-				if (data.success == false) {
-					// Use it!
-					this.toast.error(data.message, {
-						timeout: 2000
-					});
-				} else {
-					this.toast.success(data.message, {
-						timeout: 2000
-					});
-					// console.log(data);
-					if (data.data.data && Object.hasOwn(data.data.data, 'id')) {
-						this.folders = [];
-						this.folders.push(data.data.data);
-						this.folders.forEach(folder => {
-							this.target_folder_parent_id = folder.parent_folder_id;
-						});
-						this.folders.map(folder => {
-							folder.children = this.getChildren(folder.id);
-							return folder;
-						});
-						// console.log(this.target_folder_parent_id);
-					}
-				}
 			}
 
-			// recently viewed folders
-			if (this.recent_folders.length > 5) {
-				this.recent_folders.shift();  // Remove the folder
-			}
-			if (!this.recent_folders.includes(parseInt(target_folder))) {
-				this.recent_folders.push(this.target_folder);  // Append the folder
+			// // recently viewed folders
+			// if (this.recent_folders.length > 5) {
+			// 	this.recent_folders.shift();  // Remove the folder
+			// }
+			if (Array.isArray(this.recent_folders) && !this.recent_folders.includes(parseInt(this.folder.id))) {
+				this.postRecents(this.folder, 'folder');
+				this.recent_folders.push(this.folder.id);  // Append the folder
 			}
 			// Update local storage with the modified array
-			localStorage.setItem("recent_folders", JSON.stringify(this.recent_folders));
+			// localStorage.setItem("recent_folders", JSON.stringify(this.recent_folders));
 			this.$progress.finish();
 
 		},
-		async getDocuments(target_folder) {
+		async getDocuments(target_folder, page) {
 			this.documents = [];
-			const response = await fetch(this.baseUrl + '/api/folder/' + target_folder + '/documents', {
+			const response = await fetch(this.baseUrl + '/api/folder/' + target_folder + '/documents' + '?page=' + page, {
 				method: 'GET',
 				headers: {
 					'Authorization': `Bearer ${this.token}`,
@@ -220,24 +198,26 @@ export default {
 		},
 		updateSelectDocument(document) {
 			this.document = document;
-			// recently viewed folders
-			if (this.recent_documents.length > 5) {
-				this.recent_documents.shift();  // Remove the folder
-			}
-			if (!this.recent_documents.includes(this.document.id)) {
+			// // recently viewed folders
+			// if (this.recent_documents.length > 5) {
+			// 	this.recent_documents.shift();  // Remove the folder
+			// }
+			if (Array.isArray(this.recent_documents) && !this.recent_documents.includes(this.document.id)) {
+				this.postRecents(this.document, 'document');
 				this.recent_documents.push(this.document.id);  // Append the folder
 			}
 
 			// Update local storage with the modified array
-			localStorage.setItem("recent_documents", JSON.stringify(this.recent_documents));
+			// localStorage.setItem("recent_documents", JSON.stringify(this.recent_documents));
 		},
 		getChildren(folder_id) {
 			return this.folders.filter(x_folder => x_folder.parent_folder_id == folder_id && x_folder.id != folder_id);
 		},
-		refreshData(target_folder) {
+		refreshData(target_folder, page = 1) {
 			// this.hideSidebar();
+			this.document = null;
 			this.target_folder = target_folder;
-			this.getDocuments(target_folder);
+			this.getDocuments(target_folder, page);
 			this.getFolders(target_folder);
 		},
 		renderPdfViewer(actual_file, showViewer) {
@@ -246,6 +226,55 @@ export default {
 			this.listview = false;
 			this.gridview = false;
 			this.openReport = false;
+		},
+		async postRecents(item, type) {
+			const response = await fetch(this.baseUrl + '/api/recent-views', {
+				method: 'POST',
+				headers: {
+					'Authorization': `Bearer ${this.token}`,
+					'Content-type': 'application/json'
+				},
+				data: {
+					item_id: item.id,
+					type: type
+				}
+			});
+			const data = await response.json();
+			console.log(data);
+		},
+		async fetchDocumentRecents() {
+			try {
+				const response = await fetch(this.baseUrl + '/api/recent-views', {
+					method: 'GET',
+					headers: {
+						'Authorization': `Bearer ${this.token}`,
+						'Content-type': 'application/json'
+					}
+				});
+				const data = await response.json();
+				let documents = data.filter(item => item.type == 'document');
+				return documents.map(({ item_id }) => item_id);
+			} catch (error) {
+				console.error('Error fetching Recents:', error);
+				// Handle errors gracefully
+			}
+		},
+		async fetchFolderRecents() {
+			try {
+				const response = await fetch(this.baseUrl + '/api/recent-views', {
+					method: 'GET',
+					headers: {
+						'Authorization': `Bearer ${this.token}`,
+						'Content-type': 'application/json'
+					}
+				});
+				const data = await response.json();
+				let folders = data.filter(item => item.type == 'folder');
+				return folders.map(({ item_id }) => item_id);
+			} catch (error) {
+				console.error('Error fetching Recents:', error);
+				// Handle errors gracefully
+			}
 		}
 	},
 };

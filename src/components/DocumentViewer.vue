@@ -1,6 +1,6 @@
 // DocumentViewer.vue
 <template>
-	<div>
+	<div class="x y">
 		<vue-pdf-app style="height: 100vh;" :pdf="actual_file" theme="light" :config="config"></vue-pdf-app>
 		<ThumbnailsViewer :thumbnails="thumbnails" />
 		<!-- <img :src="thumbnail" alt="Thumbnail" style="max-width: 100px; max-height: 200px; margin: 10px;" /> -->

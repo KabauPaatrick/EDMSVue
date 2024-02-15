@@ -12,18 +12,19 @@
 
 				<ListView :documents="documents" :pagination="pagination" :folders="folders" v-if="listview"
 					@update-select-document="updateSelectDocument" @update-current_folder="updateCurrentFolder"
-					@open-folder="$emit('open-folder', item)" @show-viewer="renderPdfViewer" />
+					@open-folder="$emit('open-folder', item)" @show-viewer="renderPdfViewer" @get-folder="refreshData" />
 
 				<GridView :documents="documents" :pagination="pagination" :folders="folders" v-if="gridview"
 					@open-folder="$emit('open-folder', item)" @show-viewer="renderPdfViewer"
-					@update-current_folder="updateCurrentFolder" @update-select-document="updateSelectDocument" />
+					@update-current_folder="updateCurrentFolder" @update-select-document="updateSelectDocument"
+					@get-folder="refreshData" />
 
 				<DocumentViewer v-if="showViewer" :actual_file="actual_file" />
 			</div>
 		</div>
 	</div>
 	<PropertiesSideBar v-if="openProperties" :style="{ width: openProperties ? '25vw' : '0vw' }" @hide-sidebar="hideSidebar"
-		:document="document" :current_folder="current_folder" />
+		:document="document" :current_folder="current_folder" @get-folder="refreshData" />
 </template>
   
 
@@ -51,8 +52,10 @@ export default {
 			toast: useToast(),
 			baseUrl: this.baseApiUrl,
 			token: localStorage.getItem("edms_token"),
-			recent_folders: JSON.parse(localStorage.getItem("recent_folders")) || [],
-			recent_documents: JSON.parse(localStorage.getItem("recent_documents")) || [],
+			// recent_documents: JSON.parse(localStorage.getItem("recent_documents")) || [],
+			recent_documents: [],
+			// recent_folders: JSON.parse(localStorage.getItem("recent_folders")) || [],
+			recent_folders: [],
 			target_folder: reactive(0),
 			listview: true,
 			gridview: false,
@@ -82,12 +85,18 @@ export default {
 		}
 	},
 	mounted() {
-		this.recent_folders.forEach(folder => {
-			this.getFolders(folder);
-		});
-		this.recent_documents.forEach(document => {
-			this.getDocuments(document);
-		});
+		this.recent_documents = this.fetchDocumentRecents();
+		this.recent_folders = this.fetchFolderRecents();
+		if (Array.isArray(this.recent_folders)) {
+			this.recent_folders.forEach(folder => {
+				this.getFolders(folder);
+			});
+		}
+		if (Array.isArray(this.recent_documents)) {
+			this.recent_documents.forEach(document => {
+				this.getDocuments(document);
+			});
+		}
 	},
 	methods: {
 		showGridView() {
@@ -173,6 +182,50 @@ export default {
 			this.listview = false;
 			this.gridview = false;
 			this.openReport = false;
+		},
+		refreshData() {
+			this.folders = [];
+			this.documents = [];
+			this.recent_folders.forEach(folder => {
+				this.getFolders(folder);
+			});
+			this.recent_documents.forEach(document => {
+				this.getDocuments(document);
+			});
+		},
+		async fetchDocumentRecents() {
+			try {
+				const response = await fetch(this.baseUrl + '/api/recent-views', {
+					method: 'GET',
+					headers: {
+						'Authorization': `Bearer ${this.token}`,
+						'Content-type': 'application/json'
+					}
+				});
+				const data = await response.json();
+				let documents = data.filter(item => item.type == 'document');
+				return documents.map(({ item_id }) => item_id);
+			} catch (error) {
+				console.error('Error fetching Recents:', error);
+				// Handle errors gracefully
+			}
+		},
+		async fetchFolderRecents() {
+			try {
+				const response = await fetch(this.baseUrl + '/api/recent-views', {
+					method: 'GET',
+					headers: {
+						'Authorization': `Bearer ${this.token}`,
+						'Content-type': 'application/json'
+					}
+				});
+				const data = await response.json();
+				let folders = data.filter(item => item.type == 'folder');
+				return folders.map(({ item_id }) => item_id);
+			} catch (error) {
+				console.error('Error fetching Recents:', error);
+				// Handle errors gracefully
+			}
 		}
 	},
 };

@@ -3,7 +3,7 @@
 		<!-- Content of Registered Cabinets -->
 		<div class="card elevation-3">
 			<div class="card-header">
-				<h3 class="card-title"><b>{{ folder ? folder.name : "" }}</b></h3>
+				<h3 class="card-title"><b>{{ current_folder ? current_folder.name : "" }}</b></h3>
 			</div>
 			<div class="card-body table-responsive">
 				<div class="row">
@@ -16,15 +16,24 @@
 					</div>
 				</div>
 				<div v-if="filteredRows && filteredRows.length" class="row">
-					<div v-for="(thumbnail, index) in filteredRows" :key="index" class="column-md-3 thumbnail-container"
-						@click="highlistItem(thumbnail, index)">
+					<div v-for="thumbnail in filteredRows" :key="thumbnail.id" class="column-md-3 thumbnail-container"
+						@click="highlistItem(thumbnail, thumbnail.id)">
 						<img :src="thumbnail.dataUrl" alt="Thumbnail" style="width: 150px; height: 200px; margin: 2px;"
-							:class="{ 'thumbnail-active': isActive == index }"
+							:class="{ 'thumbnail-active': isActive == thumbnail.id }"
 							@contextmenu.prevent="showContextMenu($event, thumbnail)" />
-						<span v-if="bookmark_documents.includes(thumbnail.id)" class="material-symbols-outlined corner-icon"
+						<span v-if="Array.isArray(bookmark_documents) && bookmark_documents.includes(thumbnail.id)" class="material-symbols-outlined corner-icon"
 							style="font-size:20px;">stars</span>
 						<center>
-							<span>{{ thumbnail.name }}</span>
+							<span>{{ thumbnail.document_name }}</span>
+						</center>
+						<center>
+							<span>{{ thumbnail.size }} MB</span>
+						</center>
+						<center>
+							<span>{{ thumbnail.updated_at }}</span>
+						</center>
+						<center>
+							<span>Document Version: {{ thumbnail.version }}</span>
 						</center>
 					</div>
 				</div>
@@ -35,21 +44,24 @@
 				<ContextMenu v-if="showMenu" :actions="contextMenuActions" @action-clicked="handleActionClick" :x="menuX"
 					:y="menuY" />
 			</div>
-			<!-- <div class="card-footer clearfix">
-        <ul class="pagination pagination-sm m-0 float-right">
-          <li class="page-item"><a class="page-link" href="#" @click="fetchData(pagination.meta.current_page - 1)"
-              :disabled="pagination.meta.current_page === 1">&laquo;</a></li>
-          <li class="page-item"><a class="page-link" href="#" @click="fetchData(pagination.meta.current_page - 1)"
-              :disabled="pagination.meta.current_page === 1">First</a></li>
-          <span class="page-item page-link">Page {{ pagination.meta.current_page }} of {{ pagination.meta.total }}</span>
-          <li class="page-item"><a class="page-link" href="#" @click="fetchData(pagination.meta.current_page - 1)"
-              :disabled="pagination.meta.current_page === 1">Last</a></li>
-          <li class="page-item"><a class="page-link" href="#" @click="fetchData(pagination.meta.current_page + 1)"
-              :disabled="pagination.meta.current_page === pagination.meta.total">&raquo;</a></li>
-        </ul>
-      </div> -->
+			<div class="card-footer clearfix">
+				<ul class="pagination pagination-sm m-0 float-right">
+					<li class="page-item"><a class="page-link" href="#" @click="fetchData(pagination.meta.current_page - 1)"
+							:disabled="pagination.meta.current_page === 1">&laquo;</a></li>
+					<li class="page-item"><a class="page-link" href="#" @click="fetchData(pagination.meta.current_page - 1)"
+							:disabled="pagination.meta.current_page === 1">First</a></li>
+					<span class="page-item page-link">Page {{ pagination.meta.current_page }} of {{ pagination.meta.total
+					}}</span>
+					<li class="page-item"><a class="page-link" href="#" @click="fetchData(pagination.meta.current_page - 1)"
+							:disabled="pagination.meta.current_page === 1">Last</a></li>
+					<li class="page-item"><a class="page-link" href="#" @click="fetchData(pagination.meta.current_page + 1)"
+							:disabled="pagination.meta.current_page === pagination.meta.total">&raquo;</a></li>
+				</ul>
+			</div>
 		</div>
 	</div>
+	<EditDocument :editDocument="editDocument" v-if="showEditDocument" @close-modal="closeModalHandler" :folders="folders"
+		@get-folder="refreshData" :current_folder="current_folder" />
 </template>
   
 <script>
@@ -57,6 +69,7 @@
 import { ref } from 'vue';
 import * as pdfjsLib from '../../node_modules/pdfjs-dist/build/pdf';
 import "vue3-pdf-app/dist/icons/main.css";
+import EditDocument from '@/components/modals/EditDocument.vue';
 import _ from 'lodash';
 
 import ContextMenu from '@/components/ContextMenu.vue';
@@ -64,11 +77,13 @@ import ContextMenu from '@/components/ContextMenu.vue';
 export default {
 	components: {
 		ContextMenu,
+		EditDocument
 	},
 	props: {
 		documents: Array,
-		folder: {},// Define the prop type
+		current_folder: {},// Define the prop type
 		pagination: Object,
+		folders: Array,
 	},
 	data() {
 		return {
@@ -88,8 +103,11 @@ export default {
 			searchTerm: '',
 			sortedColumn: 'updated_at',
 			sortOrder: 'asc',
-			bookmark_documents: JSON.parse(localStorage.getItem("bookmark_documents")) || [],
-			thumbnails: []
+			// bookmark_documents: JSON.parse(localStorage.getItem("bookmark_documents")) || [],
+			bookmark_documents: [],
+			thumbnails: [],
+			editDocument: ref({}),
+			showEditDocument: ref(false),
 		}
 	},
 	watch: {
@@ -104,6 +122,9 @@ export default {
 				this.$progress.finish();
 			},
 		},
+	},
+	mounted() {
+		this.bookmark_documents = this.fetchDocumentBookmarks();
 	},
 	computed: {
 		filteredRows() {
@@ -159,8 +180,8 @@ export default {
 				const dataUrl = canvas.toDataURL('image/png');
 				target_document["path"] = target_document.document_versions.find((version) => version.main_file == true).physical_path;
 				target_document["dataUrl"] = dataUrl;
-				target_document["updated_at"] = target_document.document_versions.find(version => version.main_file == true) ?
-					target_document.document_versions.find((version) => version.main_file == true).updated_at : target_document.updated_at;
+				target_document['updated_at'] = new Date(target_document.document_versions.find(version => version.main_file == true) ?
+					target_document.document_versions.find((version) => version.main_file == true).updated_at : target_document.updated_at).toLocaleDateString();
 				target_document["version"] = target_document.document_versions.find(version => version.main_file == true) ?
 					target_document.document_versions.find(version => version.main_file == true).version_name : '';
 				target_document["size"] = target_document.document_versions.find(version => version.main_file == true) ?
@@ -174,6 +195,8 @@ export default {
 			}
 		},
 		openItem(item) {
+			this.isActive = item.id;
+			this.$emit('update-select-document', item);
 			let path = this.baseUrl + '/api/showPdf/' + item.path.split('/')[2];
 			let showViewer = true;
 			this.$emit('show-viewer', path, showViewer);
@@ -201,11 +224,59 @@ export default {
 				case "bookmark":
 					// bookmarkly viewed folders
 					if (this.bookmark_documents.includes(parseInt(this.targetRow.id))) {
+						this.postBookMarks(this.targetRow, 'document');
 						this.bookmark_documents = this.bookmark_documents.filter(item => item !== this.targetRow.id);   // Remove the ducment
-					}else{
+					} else {
+						this.postBookMarks(this.targetRow, 'document');
 						this.bookmark_documents.push(this.targetRow.id);
 					}
-					localStorage.setItem("bookmark_documents", JSON.stringify(this.bookmark_documents));
+					// localStorage.setItem("bookmark_documents", JSON.stringify(this.bookmark_documents));
+					break;
+				case "edit":
+					this.editDocument = this.targetRow;
+					this.showEditDocument = true;
+					break;
+				case "delete":
+					this.$swal.fire({
+						title: "Are you sure?",
+						text: "Once deleted, you will not be able to recover this File and All It's Contents!",
+						icon: "warning",
+						showCancelButton: true,
+						confirmButtonText: "Yes, delete it!",
+						cancelButtonText: "No, cancel!",
+						reverseButtons: true,
+						showLoaderOnConfirm: true,
+					})
+						.then((result) => {
+							if (result.isConfirmed) {
+								fetch(this.baseUrl + '/api/folder/documents/delete/' + this.targetRow.id, {
+									method: 'GET',
+									headers: {
+										'Authorization': `Bearer ${this.token}`,
+										'Content-type': 'application/json'
+									}
+								}).then(response => response.json()).then(response_data => {
+									if (response_data.data == 403) {
+										// Use it!
+										this.toast.error(response_data.message, {
+											timeout: 5000
+										});
+									} else {
+										// Use it!
+										this.toast.success(response_data.message, {
+											timeout: 5000
+										});
+										this.$emit('get-folder', this.targetRow.folder_id);
+									}
+								});
+								// console.log(response);
+								// const data = response.json();
+							} else {
+								this.toast.success("Folder is safe!", {
+									timeout: 5000
+								});
+							}
+						});
 					break;
 				// Add cases for other tabs
 				default:
@@ -215,6 +286,21 @@ export default {
 			}
 
 		},
+		async postBookMarks(item, type) {
+			const response = await fetch(this.baseUrl + '/api/bookmarks', {
+				method: 'POST',
+				headers: {
+					'Authorization': `Bearer ${this.token}`,
+					'Content-type': 'application/json'
+				},
+				data: {
+					item_id: item.id,
+					type: type
+				}
+			});
+			const data = await response.json();
+			console.log(data);
+		},
 		sortBy(columnKey) {
 			if (this.sortedColumn == columnKey) {
 				this.sortOrder = this.sortOrder === 'asc' ? 'desc' : 'asc';
@@ -223,6 +309,33 @@ export default {
 				this.sortOrder = 'asc';
 			}
 		},
+		closeModalHandler() {
+			// Update the prop to close the modal
+			this.showEditDocument = false;
+		},
+		refreshData(folder_id) {
+			this.$emit('get-folder', folder_id);
+		},
+		fetchData(page) {
+			this.$emit('get-folder', this.$props.current_folder.id, page);
+		},
+		async fetchDocumentBookmarks() {
+			try {
+				const response = await fetch(this.baseUrl + '/api/bookmarks', {
+					method: 'GET',
+					headers: {
+						'Authorization': `Bearer ${this.token}`,
+						'Content-type': 'application/json'
+					}
+				});
+				const data = await response.json();
+				let documents = data.filter(item => item.type == 'document');
+				return documents.map(({ item_id }) => item_id);
+			} catch (error) {
+				console.error('Error fetching bookmarks:', error);
+				// Handle errors gracefully
+			}
+		}
 	},
 };
 </script>

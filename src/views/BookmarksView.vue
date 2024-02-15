@@ -12,18 +12,18 @@
 
 				<ListView :documents="documents" :pagination="pagination" :folders="folders" v-if="listview"
 					@update-select-document="updateSelectDocument" @update-current_folder="updateCurrentFolder"
-					@open-folder="$emit('open-folder', item)" @show-viewer="renderPdfViewer" />
+					@open-folder="$emit('open-folder', item)" @show-viewer="renderPdfViewer" @get-folder="refreshData"/>
 
 				<GridView :documents="documents" :pagination="pagination" :folders="folders" v-if="gridview"
 					@open-folder="$emit('open-folder', item)" @show-viewer="renderPdfViewer"
-					@update-current_folder="updateCurrentFolder" @update-select-document="updateSelectDocument" />
+					@update-current_folder="updateCurrentFolder" @update-select-document="updateSelectDocument" @get-folder="refreshData"/>
 
 				<DocumentViewer v-if="showViewer" :actual_file="actual_file" />
 			</div>
 		</div>
 	</div>
 	<PropertiesSideBar v-if="openProperties" :style="{ width: openProperties ? '25vw' : '0vw' }" @hide-sidebar="hideSidebar"
-		:document="document" :current_folder="current_folder" />
+		:document="document" :current_folder="current_folder" @get-folder="refreshData"/>
 </template>
   
 
@@ -195,7 +195,17 @@ export default {
 			this.listview = false;
 			this.gridview = false;
 			this.openReport = false;
-		}
+		},
+		refreshData() {
+			this.folders = [];
+			this.documents = [];
+			this.recent_folders.forEach(folder => {
+				this.getFolders(folder);
+			});
+			this.recent_documents.forEach(document => {
+				this.getDocuments(document);
+			});
+		},
 	},
 };
 </script>
